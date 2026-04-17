@@ -1,0 +1,715 @@
+/* ========================================
+  COMPONENTS.CSS - UNIFICACIÓN DE ESTILOS
+  Combina: nav, login, scoring, admin, public
+  ======================================== */
+
+/* ========================================
+  WRAPPER PARA MENÚ FULL WIDTH
+  ======================================== */
+
+.nav-wrapper-full {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  padding: 0 20px;
+  margin-bottom: 30px;
+  background: var(--bg-primary);
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .nav-wrapper-full {
+  background: #0f0f23;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.nav-bar {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+/* Container después del nav */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Para admin que necesita más ancho */
+.container.admin-container {
+  max-width: 1400px;
+}
+
+/* ========================================
+  NAVEGACIÓN PRINCIPAL
+  ======================================== */
+
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-group-left {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.nav-group-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  height: 42px;
+  min-width: fit-content;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-btn:hover:not(.active) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: var(--bg-card);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ========================================
+  FIX v75: NAV-BTN.ACTIVE CON MÁXIMA ESPECIFICIDAD
+  Sobrescribe todos los estilos de Bootstrap
+  ======================================== */
+
+.nav-btn.active,
+.nav-bar .nav-btn.active,
+a.nav-btn.active,
+.nav-btn.btn.active,
+.nav-btn.btn-outline-primary.active,
+.nav-btn.btn-outline-secondary.active,
+.nav-btn.btn-outline-info.active,
+.nav-btn.btn-outline-warning.active,
+.nav-btn.btn-outline-success.active,
+.nav-btn.btn-outline-danger.active {
+  background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%) !important;
+  background-color: #667eea !important;
+  color: white !important;
+  border-color: #667eea !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+  font-weight: 600 !important;
+  transform: scale(1.02);
+}
+
+/* Asegurar que iconos y texto dentro del botón activo sean blancos */
+.nav-btn.active i,
+.nav-btn.active .bi,
+.nav-btn.active span,
+.nav-btn.active .nav-text,
+.nav-bar .nav-btn.active i,
+.nav-bar .nav-btn.active span {
+  color: white !important;
+}
+
+/* ========================================
+  TEMA OSCURO - NAV-BTN
+  ======================================== */
+
+[data-theme="dark"] .nav-bar {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .nav-btn:not(.active) {
+  background: #111827;
+  color: #e2e8f0;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .nav-btn:hover:not(.active) {
+  background: #1f2937;
+  border-color: #7c8cfc;
+  color: #7c8cfc;
+}
+
+/* Tema oscuro - botón activo */
+[data-theme="dark"] .nav-btn.active,
+[data-theme="dark"] .nav-bar .nav-btn.active,
+[data-theme="dark"] a.nav-btn.active,
+[data-theme="dark"] .nav-btn.btn.active,
+[data-theme="dark"] .nav-btn.btn-outline-primary.active,
+[data-theme="dark"] .nav-btn.btn-outline-secondary.active,
+[data-theme="dark"] .nav-btn.btn-outline-info.active,
+[data-theme="dark"] .nav-btn.btn-outline-warning.active {
+  background: linear-gradient(135deg, #7c8cfc 0%, #667eea 100%) !important;
+  background-color: #7c8cfc !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(124, 140, 252, 0.4) !important;
+}
+
+[data-theme="dark"] .nav-btn.active i,
+[data-theme="dark"] .nav-btn.active span,
+[data-theme="dark"] .nav-btn.active .nav-text {
+  color: white !important;
+}
+
+/* ========================================
+   LOGIN FORM - SIMPLIFICADO
+   ======================================== */
+
+.login-card .form-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.login-card .form-control {
+  height: 56px;
+  padding-left: 48px !important;
+  padding-right: 20px !important;
+  background-color: var(--bg-card) !important;
+  border: 2px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+
+.login-card .input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  color: var(--text-muted);
+  font-size: 20px;
+  pointer-events: none;
+}
+
+.login-card .form-control:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+  outline: none !important;
+}
+
+.login-card .form-control::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+[data-theme="dark"] .login-card .form-control {
+  background: #1f2937 !important;
+  color: #f7fafc !important;
+  border-color: #4a5568 !important;
+}
+
+[data-theme="dark"] .login-card .form-control::placeholder {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .login-card .input-icon {
+  color: #9ca3af !important;
+}
+
+/* ========================================
+  SCORING - NIVELES DE RIESGO
+  ======================================== */
+
+.nivel-riesgo-card {
+  padding: 10px !important;
+  border-radius: 8px !important;
+  margin-bottom: 10px !important;
+}
+
+/* Eliminar SOLO texto directo duplicado en niveles de riesgo */
+.nivel-riesgo-card > text {
+  display: none !important;
+}
+
+.nivel-riesgo-card .badge {
+  display: inline-block !important;
+  padding: 5px 10px !important;
+  font-weight: bold !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+}
+
+.nivel-riesgo-card .tasas-riesgo {
+  background: rgb(64, 63, 63) !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="dark"] .nivel-riesgo-card .tasas-riesgo {
+  background: #1f2937 !important;
+  border: 1px solid #4a5568 !important;
+}
+
+[data-theme="dark"] .nivel-riesgo-card h6 {
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .nivel-riesgo-card label.form-label.fw-bold {
+  color: #e2e8f0 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .nivel-riesgo-card input {
+  background: #111827 !important;
+  color: #111827 !important;
+  border: 1px solid #4a5568 !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Aval dinámico */
+[data-theme="dark"] .nivel-riesgo-card .mt-3.p-2.bg-white.rounded {
+  background: #1a1b3a !important;
+  border: 1px solid #ff9800 !important;
+}
+
+[data-theme="dark"] .nivel-aval-input {
+  background: #111827 !important;
+  color: rgb(64, 63, 63) !important;
+  border: 2px solid #ff9800 !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* ========================================
+  ADMIN PANEL
+  ======================================== */
+
+.tab {
+  background: transparent;
+  border: none;
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.tab button {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+  padding: 14px 24px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.tab button:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+}
+
+.tab button.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white !important;
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .tab button {
+  background: #1f2937 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a5568 !important;
+}
+
+[data-theme="dark"] .tab button:hover {
+  background: #2d3748 !important;
+  color: #7c8cfc !important;
+}
+
+[data-theme="dark"] .tab button.active {
+  background: linear-gradient(135deg, #7c8cfc 0%, #667eea 100%) !important;
+  color: white !important;
+}
+
+.tabcontent {
+  background: transparent;
+  padding: 30px;
+  border-radius: 0 12px 12px 12px;
+}
+
+/* ========================================
+  RESPONSIVE - MÓVIL
+  ======================================== */
+
+@media (max-width: 991px) {
+  .nav-wrapper-full {
+    display: none;
+  }
+
+  /* Mobile Navigation */
+  .mobile-nav {
+    display: flex;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 16px;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  [data-theme="dark"] .mobile-nav {
+    background: #0f0f23 !important;
+    border-color: #4a5568;
+  }
+
+  /* Título con nombre de usuario */
+  .mobile-nav-title-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobile-nav-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Nombre de sección (ej: "Simulador") */
+  .mobile-nav-title .section-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Rol del usuario (ej: "• admin") */
+  .mobile-nav-title .user-role {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--primary);
+    opacity: 0.9;
+  }
+
+  [data-theme="dark"] .mobile-nav-title .user-role {
+    color: #7c8cfc;
+  }
+
+  /* FIX: Botón hamburguesa / X siempre visible */
+  .mobile-nav-hamburger {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    z-index: 1002; /* Mayor que el navbar */
+    position: relative;
+  }
+
+  .mobile-nav-hamburger:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  [data-theme="dark"] .mobile-nav-hamburger {
+    color: #e2e8f0;
+  }
+
+  /* Menú desplegable con z-index menor */
+  .mobile-nav-menu {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 999; /* Menor que el navbar */
+    display: none;
+    margin-top: 0;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+  }
+
+  [data-theme="dark"] .mobile-nav-menu {
+    background-color: #16162e !important;
+    border-color: #4a5568 !important;
+  }
+
+  .mobile-nav-menu.show {
+    display: block;
+    animation: slideDown 0.3s ease;
+  }
+
+  .mobile-nav-item {
+    display: block;
+    padding: 12px 15px;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+  }
+
+  .mobile-nav-item:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  .mobile-nav-item.active {
+    background-color: var(--primary) !important;
+    color: white !important;
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] .mobile-nav-item {
+    color: #e2e8f0;
+  }
+
+  [data-theme="dark"] .mobile-nav-item:hover {
+    background-color: #1f2937;
+  }
+}
+
+/* Animación suave del menú */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   FIX AVAL AMARILLO EN ADMIN TEMA OSCURO
+   ======================================== */
+
+/* Badge amarillo de aval */
+[data-theme="dark"] .badge.bg-warning {
+  background-color: #fbbf24 !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+/* Contenedor de aval con fondo amarillo */
+[data-theme="dark"] .p-2.rounded[style*="#fff8e1"] {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+/* Texto en contenedor amarillo - FORZAR NEGRO */
+[data-theme="dark"] .p-2.rounded[style*="#fff8e1"] .form-label,
+[data-theme="dark"] .p-2.rounded[style*="#fff8e1"] label {
+  color: #fbbf24 !important;
+  font-weight: 600 !important;
+}
+
+/* Input en aval amarillo */
+[data-theme="dark"] .p-2.rounded[style*="#fff8e1"] input {
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  border: 2px solid #fbbf24 !important;
+}
+
+/* ========================================
+   MOBILE MENU IMPROVEMENTS
+   ======================================== */
+
+/* FIX: ELIMINAR ::after redundante que causaba doble título */
+.mobile-nav-title.showing-menu::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Botón de tema consistente con otros items */
+.mobile-nav-theme-toggle {
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 12px 15px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-nav-theme-toggle:hover {
+  background-color: var(--bg-secondary);
+}
+
+.mobile-nav-theme-toggle i {
+  font-size: 16px;
+  width: 16px;
+  text-align: center;
+}
+
+[data-theme="dark"] .mobile-nav-theme-toggle {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .mobile-nav-theme-toggle:hover {
+  background-color: #1f2937;
+}
+
+/* Cambia el fondo de la tarjeta de criterio a oscuro */
+[data-theme="dark"] .card.criterion-card {
+  background-color: #1f2937 !important;
+  border-color: #4a5568 !important;
+}
+
+/* ========================================
+   INDICADOR DROPDOWN MEJORADO - PERSISTENTE
+   ======================================== */
+
+/* Eliminar TODOS los estilos nativos del select */
+.form-select,
+select.form-select,
+select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23667eea' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+  padding-right: 2.5rem !important;
+}
+
+/* Mantener el indicador en TODOS los estados */
+.form-select:hover,
+.form-select:focus,
+.form-select:active,
+.form-select[open],
+select:hover,
+select:focus,
+select:active {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23667eea' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+}
+
+/* Tema oscuro - indicador visible y persistente */
+[data-theme="dark"] .form-select,
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%237c8cfc' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-color: #1f2937 !important;
+  border-color: #4a5568 !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+}
+
+[data-theme="dark"] .form-select:hover,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-select:active,
+[data-theme="dark"] select:hover,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] select:active {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%237c8cfc' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-color: #1f2937 !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+}
+
+/* Móvil - indicador más grande y SIEMPRE visible */
+@media (max-width: 768px) {
+  .form-select,
+  select {
+    background-size: 20px 15px !important;
+    padding-right: 3rem !important;
+  }
+
+  .form-select:hover,
+  .form-select:focus,
+  .form-select:active,
+  select:hover,
+  select:focus,
+  select:active {
+    background-size: 20px 15px !important;
+  }
+}
+
+/* ========================================
+  BOTÓN HISTORIAL EN TABS
+  ======================================== */
+
+/* Botón de historial debe lucir igual que otros tabs */
+.tab button.tablinks,
+.tab .tablinks {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+  padding: 14px 24px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.tab button.tablinks:hover,
+.tab .tablinks:hover {
+  background: var(--bg-secondary);
+  color: var(--primary);
+}
+
+.tab button.tablinks.active,
+.tab .tablinks.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white !important;
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .tab button.tablinks,
+[data-theme="dark"] .tab .tablinks {
+  background: #1f2937 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a5568 !important;
+}
+
+[data-theme="dark"] .tab button.tablinks:hover,
+[data-theme="dark"] .tab .tablinks:hover {
+  background: #2d3748 !important;
+  color: #7c8cfc !important;
+}
+
+[data-theme="dark"] .tab button.tablinks.active,
+[data-theme="dark"] .tab .tablinks.active {
+  background: linear-gradient(135deg, #7c8cfc 0%, #667eea 100%) !important;
+  color: white !important;
+}

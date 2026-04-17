@@ -1,0 +1,153 @@
+{% extends 'dashboards/_base_dashboard.html' %}
+
+{% block title %}Panel de Auditoría{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-3 mb-4">
+    <!-- Stat: Total evaluaciones -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-value">{{ stats.total_evaluaciones or 0 }}</div>
+            <div class="stat-label">Total evaluaciones</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Total simulaciones -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <div class="stat-value">{{ stats.total_simulaciones or 0 }}</div>
+            <div class="stat-label">Total simulaciones</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Tasa aprobación -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-percent"></i>
+            </div>
+            <div class="stat-value">{{ stats.tasa_aprobacion or 0 }}%</div>
+            <div class="stat-label">Tasa aprobación</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Aprobados vs Rechazados -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-pie-chart"></i>
+            </div>
+            <div class="stat-value" style="font-size: 1.2rem;">
+                <span class="text-success">{{ stats.total_aprobados or 0 }}</span> / 
+                <span class="text-danger">{{ stats.total_rechazados or 0 }}</span>
+            </div>
+            <div class="stat-label">Aprobados / Rechazados</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: Accesos de auditoría -->
+    <div class="col-lg-4">
+        <div class="quick-actions">
+            <h5><i class="bi bi-shield-check me-2"></i>Accesos de Auditoría</h5>
+            
+            {% if tiene_alguno_de(['sim_hist_todos']) %}
+            <a href="/historial_simulaciones" class="quick-action-btn">
+                <i class="bi bi-clock-history text-primary"></i>
+                <span>Historial Simulaciones</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['sco_hist_todos']) %}
+            <a href="/admin/historial-evaluaciones" class="quick-action-btn">
+                <i class="bi bi-file-earmark-text text-success"></i>
+                <span>Historial Evaluaciones</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('cfg_sco_ver') %}
+            <a href="/admin#ScoringInterno" class="quick-action-btn">
+                <i class="bi bi-sliders text-info"></i>
+                <span>Ver Configuración Scoring</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('cfg_tasas_ver') %}
+            <a href="/admin#TasasCredito" class="quick-action-btn">
+                <i class="bi bi-percent text-warning"></i>
+                <span>Ver Tasas de Crédito</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="alert alert-info" style="font-size: 0.85rem;">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Modo Solo Lectura</strong><br>
+            Como auditor, tienes acceso de visualización a toda la información del sistema.
+        </div>
+    </div>
+    
+    <!-- Columna central: Evaluaciones por mes -->
+    <div class="col-lg-4">
+        <div class="data-panel">
+            <h5><i class="bi bi-graph-up"></i> Evaluaciones por Mes</h5>
+            
+            {% if stats.evaluaciones_por_mes %}
+            <ul class="data-list">
+                {% for item in stats.evaluaciones_por_mes %}
+                <li>
+                    <span class="item-label">{{ item.mes }}</span>
+                    <span class="item-value">{{ item.total }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">Sin datos</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Columna derecha: Distribución por asesor -->
+    <div class="col-lg-4">
+        <div class="data-panel">
+            <h5><i class="bi bi-people"></i> Por Asesor</h5>
+            
+            {% if stats.distribucion_asesores %}
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-sm">
+                    <thead style="position: sticky; top: 0; background: var(--bg-card);">
+                        <tr>
+                            <th>Asesor</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asesor in stats.distribucion_asesores %}
+                        <tr>
+                            <td style="font-size: 0.85rem;">{{ asesor.nombre }}</td>
+                            <td class="text-end fw-bold">{{ asesor.total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">Sin datos</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

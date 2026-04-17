@@ -1,0 +1,603 @@
+{% extends 'dashboards/_base_dashboard.html' %}
+
+{% block title %}Panel Ejecutivo{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para jerarquía de usuarios */
+    .hierarchy-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+    
+    .hierarchy-header {
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(25, 135, 84, 0.05));
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .hierarchy-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .supervisor-card {
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        margin: 16px;
+        overflow: hidden;
+        background: var(--bg-secondary);
+    }
+    
+    .supervisor-header {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .supervisor-header:hover {
+        background: var(--bg-secondary);
+    }
+    
+    .supervisor-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6f42c1, #5a32a3);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-right: 14px;
+        flex-shrink: 0;
+    }
+    
+    .supervisor-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .supervisor-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .supervisor-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .supervisor-stats {
+        display: flex;
+        gap: 20px;
+        margin-left: auto;
+    }
+    
+    .supervisor-stat {
+        text-align: center;
+    }
+    
+    .supervisor-stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .supervisor-stat-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    
+    /* Botón de acciones para supervisor */
+    .supervisor-actions {
+        margin-left: 16px;
+    }
+    
+    .supervisor-actions .btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .supervisor-toggle {
+        margin-left: 12px;
+        color: var(--text-muted);
+        transition: transform 0.2s ease;
+    }
+    
+    .supervisor-toggle.expanded {
+        transform: rotate(180deg);
+    }
+    
+    .asesores-list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+    
+    .asesores-list.expanded {
+        max-height: 1000px;
+    }
+    
+    .asesor-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px 12px 76px;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.2s ease;
+    }
+    
+    .asesor-item:last-child {
+        border-bottom: none;
+    }
+    
+    .asesor-item:hover {
+        background: rgba(0, 0, 0, 0.02);
+    }
+    
+    [data-theme="dark"] .asesor-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .asesor-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    
+    .asesor-indicator.active {
+        background: #198754;
+        box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.2);
+    }
+    
+    .asesor-indicator.inactive {
+        background: var(--text-muted);
+        opacity: 0.5;
+    }
+    
+    .asesor-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .asesor-name {
+        font-weight: 500;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+    
+    .asesor-username {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .asesor-stats {
+        display: flex;
+        gap: 16px;
+        font-size: 0.85rem;
+    }
+    
+    .asesor-stats span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-secondary);
+    }
+    
+    /* Botón de acciones para asesor */
+    .asesor-actions {
+        margin-left: 16px;
+    }
+    
+    .asesor-actions .btn {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+    
+    /* Sin asignaciones */
+    .no-hierarchy {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+    
+    .no-hierarchy i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+    
+    .no-hierarchy h4 {
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .supervisor-header {
+            flex-wrap: wrap;
+        }
+        
+        .supervisor-stats {
+            width: 100%;
+            margin-left: 58px;
+            margin-top: 10px;
+        }
+        
+        .supervisor-actions {
+            width: 100%;
+            margin-left: 58px;
+            margin-top: 8px;
+        }
+        
+        .asesor-item {
+            flex-wrap: wrap;
+            padding-left: 16px;
+        }
+        
+        .asesor-stats {
+            width: 100%;
+            margin-top: 8px;
+            margin-left: 22px;
+        }
+        
+        .asesor-actions {
+            width: 100%;
+            margin-left: 22px;
+            margin-top: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+{% if stats.sin_asignaciones %}
+<div class="no-hierarchy">
+    <i class="bi bi-diagram-3"></i>
+    <h4>Sin jerarquía configurada</h4>
+    <p>No tienes supervisores ni asesores asignados.</p>
+    <p class="text-muted">Contacta al administrador para configurar tu equipo.</p>
+</div>
+{% else %}
+
+<!-- Estadísticas principales -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-purple bg-opacity-10 text-purple">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-value">{{ stats.supervisores_asignados or 0 }}</div>
+            <div class="stat-label">Supervisores</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <div class="stat-value">{{ stats.asesores_en_jerarquia or 0 }}</div>
+            <div class="stat-label">Asesores en equipo</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
+            <div class="stat-value">{{ stats.evaluaciones_mes or 0 }}</div>
+            <div class="stat-label">Evaluaciones mes</div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon {% if stats.variacion_mes and stats.variacion_mes >= 0 %}bg-success bg-opacity-10 text-success{% else %}bg-danger bg-opacity-10 text-danger{% endif %}">
+                <i class="bi bi-graph-{% if stats.variacion_mes and stats.variacion_mes >= 0 %}up{% else %}down{% endif %}-arrow"></i>
+            </div>
+            <div class="stat-value {% if stats.variacion_mes and stats.variacion_mes >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ stats.variacion_mes|default(0) }}%
+            </div>
+            <div class="stat-label">vs mes anterior</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: KPIs y accesos -->
+    <div class="col-lg-4">
+        <div class="quick-actions">
+            <h5><i class="bi bi-speedometer2 me-2"></i>Accesos Ejecutivos</h5>
+            
+            {% if tiene_alguno_de(['sco_hist_todos', 'sco_hist_equipo']) %}
+            <a href="/admin/historial-evaluaciones" class="quick-action-btn">
+                <i class="bi bi-file-earmark-text text-primary"></i>
+                <span>Historial Completo</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['sim_hist_todos', 'sim_hist_equipo']) %}
+            <a href="/historial_simulaciones" class="quick-action-btn">
+                <i class="bi bi-clock-history text-info"></i>
+                <span>Simulaciones</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['com_ver_pendientes', 'com_ver_todos']) %}
+            <a href="/admin/comite-credito" class="quick-action-btn">
+                <i class="bi bi-clipboard-check text-warning"></i>
+                <span>Estado Comité</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('sim_usar') %}
+            <a href="/simulador" class="quick-action-btn">
+                <i class="bi bi-calculator text-secondary"></i>
+                <span>Nueva Simulación</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('sco_ejecutar') %}
+            <a href="/scoring" class="quick-action-btn">
+                <i class="bi bi-graph-up text-success"></i>
+                <span>Evaluar Scoring</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Métricas de conversión -->
+        <div class="data-panel">
+            <h5><i class="bi bi-funnel"></i> Conversión Comité</h5>
+            <ul class="data-list">
+                <li>
+                    <span class="item-label">Total enviados</span>
+                    <span class="item-value">{{ stats.total_comite or 0 }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Aprobados</span>
+                    <span class="item-value text-success">{{ stats.aprobados_comite or 0 }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Pendientes</span>
+                    <span class="item-value text-warning">{{ stats.pendientes_comite or 0 }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Tasa conversión</span>
+                    {% if stats.total_comite and stats.total_comite > 0 %}
+                    {% set tasa = ((stats.aprobados_comite or 0) / stats.total_comite * 100)|round(1) %}
+                    <span class="item-value {% if tasa >= 50 %}text-success{% else %}text-danger{% endif %}">{{ tasa }}%</span>
+                    {% else %}
+                    <span class="item-value text-muted">N/A</span>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Comparativa mensual -->
+        <div class="data-panel">
+            <h5><i class="bi bi-bar-chart"></i> Comparativa</h5>
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="text-center p-3" style="background: var(--bg-secondary); border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">ESTE MES</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                            {{ stats.evaluaciones_mes or 0 }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-center p-3" style="background: var(--bg-secondary); border-radius: 8px;">
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">MES ANTERIOR</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-secondary);">
+                            {{ stats.evaluaciones_mes_anterior or 0 }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Columna derecha: Jerarquía de equipo -->
+    <div class="col-lg-8">
+        <div class="hierarchy-card">
+            <div class="hierarchy-header">
+                <h5>
+                    <i class="bi bi-diagram-3"></i>
+                    Mi Equipo
+                </h5>
+                <span class="badge bg-success">
+                    {{ stats.supervisores_asignados or 0 }} supervisores · {{ stats.asesores_en_jerarquia or 0 }} asesores
+                </span>
+            </div>
+            
+            {% if stats.jerarquia and stats.jerarquia.supervisores %}
+                {% for supervisor in stats.jerarquia.supervisores %}
+                <div class="supervisor-card">
+                    <div class="supervisor-header" onclick="toggleAsesores(this)">
+                        <div class="supervisor-avatar">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div class="supervisor-info">
+                            <div class="supervisor-name">
+                                {{ supervisor.nombre_completo }}
+                                <span class="badge bg-purple" style="background: #6f42c1 !important;">Supervisor</span>
+                            </div>
+                            <div class="supervisor-meta">
+                                @{{ supervisor.username }} · {{ supervisor.asesores|length }} asesores asignados
+                            </div>
+                        </div>
+                        <div class="supervisor-stats d-none d-md-flex">
+                            <div class="supervisor-stat">
+                                <div class="supervisor-stat-value">{{ supervisor.stats.evaluaciones_hoy }}</div>
+                                <div class="supervisor-stat-label">Hoy</div>
+                            </div>
+                            <div class="supervisor-stat">
+                                <div class="supervisor-stat-value">{{ supervisor.stats.evaluaciones_mes }}</div>
+                                <div class="supervisor-stat-label">Mes</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dropdown de acciones del supervisor -->
+                        <div class="supervisor-actions" onclick="event.stopPropagation();">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    {% if tiene_alguno_de(['sco_hist_equipo', 'sco_hist_todos']) %}
+                                    <li>
+                                        <a class="dropdown-item" href="/admin/historial-evaluaciones?asesor={{ supervisor.username }}">
+                                            <i class="bi bi-file-earmark-text me-2"></i>Ver evaluaciones
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if tiene_alguno_de(['sim_hist_equipo', 'sim_hist_todos']) %}
+                                    <li>
+                                        <a class="dropdown-item" href="/historial_simulaciones?asesor={{ supervisor.username }}">
+                                            <i class="bi bi-clock-history me-2"></i>Ver simulaciones
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="supervisor-toggle">
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                    </div>
+                    
+                    <ul class="asesores-list">
+                        {% if supervisor.asesores %}
+                            {% for asesor in supervisor.asesores %}
+                            <li class="asesor-item">
+                                <div class="asesor-indicator {{ 'active' if asesor.stats.activo_hoy else 'inactive' }}"></div>
+                                <div class="asesor-info">
+                                    <div class="asesor-name">{{ asesor.nombre_completo }}</div>
+                                    <div class="asesor-username">@{{ asesor.username }}</div>
+                                </div>
+                                <div class="asesor-stats">
+                                    <span title="Evaluaciones hoy">
+                                        <i class="bi bi-clipboard-check"></i>{{ asesor.stats.evaluaciones_hoy }}
+                                    </span>
+                                    <span title="Evaluaciones mes">
+                                        <i class="bi bi-calendar3"></i>{{ asesor.stats.evaluaciones_mes }}
+                                    </span>
+                                    {% if asesor.stats.casos_pendientes > 0 %}
+                                    <span class="text-warning" title="Casos pendientes">
+                                        <i class="bi bi-hourglass-split"></i>{{ asesor.stats.casos_pendientes }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Dropdown de acciones del asesor -->
+                                <div class="asesor-actions">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            {% if tiene_alguno_de(['sco_hist_equipo', 'sco_hist_todos']) %}
+                                            <li>
+                                                <a class="dropdown-item" href="/admin/historial-evaluaciones?asesor={{ asesor.username }}">
+                                                    <i class="bi bi-file-earmark-text me-2"></i>Ver evaluaciones
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            {% if tiene_alguno_de(['sim_hist_equipo', 'sim_hist_todos']) %}
+                                            <li>
+                                                <a class="dropdown-item" href="/historial_simulaciones?asesor={{ asesor.username }}">
+                                                    <i class="bi bi-clock-history me-2"></i>Ver simulaciones
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                        <li class="asesor-item">
+                            <span class="text-muted">Sin asesores asignados a este supervisor</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="no-hierarchy" style="padding: 40px;">
+                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                <p class="mb-0">No hay supervisores en tu jerarquía</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Actividad por día -->
+        {% if stats.actividad_semanal %}
+        <div class="data-panel">
+            <h5><i class="bi bi-calendar3"></i> Actividad por Día (últimas 4 semanas)</h5>
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                {% for item in stats.actividad_semanal %}
+                <div class="text-center flex-grow-1" style="min-width: 50px;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">
+                        {{ item.total }}
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                        {{ item.dia }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAsesores(header) {
+    const card = header.closest('.supervisor-card');
+    const list = card.querySelector('.asesores-list');
+    const toggle = header.querySelector('.supervisor-toggle');
+    
+    list.classList.toggle('expanded');
+    toggle.classList.toggle('expanded');
+}
+
+// Auto-expandir el primer supervisor
+document.addEventListener('DOMContentLoaded', function() {
+    const firstHeader = document.querySelector('.supervisor-header');
+    if (firstHeader) {
+        toggleAsesores(firstHeader);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,629 @@
+<!--  Barra de navegación unificada -->
+
+{# Detectar si estamos en una página administrativa especial #}
+{% set paginas_admin_especiales = ['/admin/comite-credito', '/admin/historial-evaluaciones', '/admin/asignaciones-equipo', '/admin/parametros-sistema'] %}
+{% set en_pagina_admin_especial = request.path in paginas_admin_especiales %}
+{% set rol_actual = session.get('rol', 'asesor') %}
+{% set es_rol_admin = rol_actual in ['admin', 'admin_tecnico'] %}
+
+{# Para admin/admin_tecnico en páginas admin especiales, simplificar navbar #}
+{% set navbar_simplificado = en_pagina_admin_especial and es_rol_admin %}
+
+{# FIX v75: Asesores NO deben ver el botón Comité general, solo "Mis Casos" #}
+{% set puede_ver_comite_general = rol_actual not in ['asesor'] and tiene_alguno_de(['com_ver_pendientes', 'com_ver_todos', 'com_aprobar', 'com_rechazar']) %}
+
+<!-- Barra de navegación unificada FUERA del container -->
+<div class="nav-wrapper-full" data-rol="{{ rol_actual }}">
+    <div class="nav-bar">
+        <!-- Grupo principal de navegación (lado izquierdo) -->
+        <div class="nav-group nav-group-left">
+            <!-- Botón Inicio/Dashboard -->
+            {% set puede_admin_panel = tiene_permiso('admin_panel_acceso') or tiene_alguno_de(['cfg_sco_editar', 'cfg_tasas_editar', 'cfg_params_editar', 'usr_crear', 'usr_permisos']) %}
+            {% set inicio_url = '/admin' if (rol_actual in ['admin', 'admin_tecnico'] and puede_admin_panel) else '/dashboard' %}
+            <a href="{{ inicio_url }}" class="nav-btn btn btn-outline-secondary btn-inicio {% if request.path == inicio_url %}active{% endif %}" title="Inicio">
+                <i class="bi bi-house-door"></i> <span class="nav-text">Inicio</span>
+            </a>
+
+            {# Si NO es navbar simplificado, mostrar todos los botones de herramientas #}
+            {% if not navbar_simplificado %}
+
+            {% if tiene_permiso('sim_usar') %}
+            <a href="/simulador" class="nav-btn btn btn-outline-primary {% if request.path == '/simulador' %}active{% endif %}" title="Simulador">
+                <i class="bi bi-calculator"></i> <span class="nav-text">Simulador</span>
+            </a>
+            {% endif %}
+
+            {% if tiene_permiso('cap_usar') %}
+            <a href="/capacidad_pago" class="nav-btn btn btn-outline-primary {% if request.path == '/capacidad_pago' %}active{% endif %}" title="Capacidad de Pago">
+                <i class="bi bi-cash-stack"></i> <span class="nav-text">Capacidad</span>
+            </a>
+            {% endif %}
+
+            {% if tiene_permiso('sco_ejecutar') %}
+            <a href="/scoring" class="nav-btn btn btn-outline-primary {% if request.path == '/scoring' %}active{% endif %}" title="Scoring">
+                <i class="bi bi-graph-up"></i> <span class="nav-text">Scoring</span>
+            </a>
+            {% endif %}
+
+            {% if tiene_alguno_de(['sim_hist_propio', 'sim_hist_equipo', 'sim_hist_todos']) %}
+            <a href="/historial_simulaciones" class="nav-btn btn btn-outline-info {% if request.path == '/historial_simulaciones' %}active{% endif %}" title="Historial Simulaciones">
+                <i class="bi bi-clock-history"></i> <span class="nav-text">Historial</span>
+            </a>
+            {% endif %}
+
+            {% endif %}{# fin if not navbar_simplificado #}
+
+            {# Estos botones siempre se muestran si tienen permisos (son páginas admin) #}
+            {% if tiene_alguno_de(['sco_hist_propio', 'sco_hist_equipo', 'sco_hist_todos']) %}
+            <a href="/admin/historial-evaluaciones" class="nav-btn btn btn-outline-info {% if request.path == '/admin/historial-evaluaciones' %}active{% endif %}" title="Historial Evaluaciones">
+                <i class="bi bi-file-earmark-text"></i> <span class="nav-text">Evaluaciones</span>
+            </a>
+            {% endif %}
+
+            {# Mis Casos solo se muestra si NO es navbar simplificado (es para asesores) #}
+            {% if not navbar_simplificado %}
+            {% if tiene_alguno_de(['com_enviar', 'com_ver_propios']) %}
+            <a href="/asesor/mis-casos-comite" class="nav-btn btn btn-outline-primary {% if request.path == '/asesor/mis-casos-comite' %}active{% endif %} position-relative" style="overflow: visible;" title="Mis Casos Comité">
+                <i class="bi bi-folder-check"></i> <span class="nav-text">Mis Casos</span>
+                <span class="badge rounded-pill bg-danger" id="badge-casos-comite" style="display: none; position: absolute; top: -8px; right: -10px; font-size: 0.7rem; min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px;">
+                    0
+                </span>
+            </a>
+            {% endif %}
+            {% endif %}
+
+            {# FIX v75: Botón Comité solo para roles NO asesor con permisos adecuados #}
+            {% if puede_ver_comite_general %}
+            <a href="/admin/comite-credito" class="nav-btn btn btn-outline-warning {% if request.path == '/admin/comite-credito' %}active{% endif %}" title="Comité de Crédito">
+                <i class="bi bi-clipboard-check"></i> <span class="nav-text">Comité</span>
+            </a>
+            {% endif %}
+
+            {# Panel Admin visible SOLO si el backend permitiría entrar a /admin #}
+            {% if puede_admin_panel %}
+            <a href="/admin" class="nav-btn btn btn-outline-secondary {% if request.path == '/admin' %}active{% endif %}" title="Panel Admin">
+                <i class="bi bi-gear"></i> <span class="nav-text">Admin</span>
+            </a>
+            {% endif %}
+
+            {# Parámetros del Sistema - Solo con permiso cfg_params_sistema #}
+            {% if tiene_permiso('cfg_params_sistema') %}
+            <a href="/admin/parametros-sistema" class="nav-btn btn btn-outline-info {% if request.path == '/admin/parametros-sistema' %}active{% endif %}" title="Parámetros del Sistema">
+                <i class="bi bi-sliders"></i> <span class="nav-text">Parámetros</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Grupo de acciones usuario (lado derecho) -->
+        <div class="nav-group nav-group-right">
+            <!-- Mini resumen de estadísticas (solo pantallas grandes) -->
+            {% if resumen_navbar and resumen_navbar['items'] %}
+            <div class="nav-stats d-none d-xxl-flex align-items-center" style="margin-right: 8px; gap: 6px;">
+                {% for item in resumen_navbar['items'] %}
+                <div class="nav-stat-item" style="display: flex; align-items: center; padding: 3px 8px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">
+                    <i class="bi {{ item.icono }} text-{{ item.color }}" style="font-size: 0.85rem; margin-right: 4px;"></i>
+                    <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-primary);">{{ item.valor }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Dropdown de Usuario (agrupa: info, tema, salir) -->
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 4px 10px; border-radius: 8px;">
+                    <i class="bi bi-person-circle me-1" style="font-size: 1rem;"></i>
+                    <span class="d-none d-md-inline" style="font-size: 0.85rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ session.get('nombre_completo') or session.get('username') }}
+                    </span>
+                    {% set rol_display = rol_actual|upper|replace('_', ' ') %}
+                    <span class="badge ms-1
+                        {% if rol_actual == 'admin' %}bg-danger
+                        {% elif rol_actual == 'supervisor' %}bg-purple
+                        {% elif rol_actual == 'auditor' %}bg-warning text-dark
+                        {% elif rol_actual == 'gerente' %}bg-success
+                        {% elif rol_actual == 'admin_tecnico' %}bg-info
+                        {% elif rol_actual == 'comite_credito' %}bg-dark
+                        {% else %}bg-primary{% endif %}"
+                        style="font-size: 0.6rem; padding: 2px 5px;">
+                        {# Mostrar abreviatura del rol #}
+                        {% if rol_actual == 'admin' %}ADM
+                        {% elif rol_actual == 'supervisor' %}SUP
+                        {% elif rol_actual == 'auditor' %}AUD
+                        {% elif rol_actual == 'gerente' %}GER
+                        {% elif rol_actual == 'admin_tecnico' %}TEC
+                        {% elif rol_actual == 'comite_credito' %}COM
+                        {% else %}ASE{% endif %}
+                    </span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="min-width: 220px;">
+                    <!-- Info usuario -->
+                    <li class="dropdown-header" style="padding: 10px 16px;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.95rem;">
+                            {{ session.get('nombre_completo') or session.get('username') }}
+                        </div>
+                        <small style="color: var(--text-muted);">@{{ session.get('username') }} · {{ rol_display }}</small>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+
+                    <!-- Mini stats en dropdown (pantallas medianas) -->
+                    {% if resumen_navbar and resumen_navbar['items'] %}
+                    <li class="d-xxl-none">
+                        <div class="px-3 py-2" style="background: var(--bg-secondary);">
+                            {% for item in resumen_navbar['items'] %}
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi {{ item.icono }} text-{{ item.color }} me-2"></i>
+                                <span style="font-weight: 600;">{{ item.valor }}</span>
+                                <span class="ms-1 text-muted" style="font-size: 0.75rem;">{{ item.texto }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </li>
+                    <li class="d-xxl-none"><hr class="dropdown-divider"></li>
+                    {% endif %}
+
+                    <!-- Cambiar tema -->
+                    <li>
+                        <button class="dropdown-item" type="button" id="theme-toggle-dropdown">
+                            <i class="bi bi-moon-fill me-2"></i> Cambiar Tema
+                        </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+
+                    <!-- Cerrar sesión -->
+                    <li>
+                        <a class="dropdown-item text-danger" href="/logout">
+                            <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Navigation -->
+<div class="mobile-nav" data-rol="{{ rol_actual }}">
+    <!-- Título móvil con identificación de usuario -->
+    <div class="mobile-nav-title-container" style="display: flex; flex-direction: column; line-height: 1.2; flex: 1; min-width: 0;">
+        <span class="mobile-nav-title" style="font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ session.get('nombre_completo') or session.get('username') }}
+        </span>
+        <span style="font-size: 0.65rem; color: var(--text-muted);">
+            <span class="badge
+                {% if rol_actual == 'admin' %}bg-danger
+                {% elif rol_actual == 'supervisor' %}bg-purple
+                {% elif rol_actual == 'auditor' %}bg-warning text-dark
+                {% elif rol_actual == 'gerente' %}bg-success
+                {% elif rol_actual == 'admin_tecnico' %}bg-info
+                {% elif rol_actual == 'comite_credito' %}bg-dark
+                {% else %}bg-primary{% endif %}"
+                style="font-size: 0.55rem; padding: 1px 4px;">
+                {{ rol_display }}
+            </span>
+        </span>
+    </div>
+
+    <!-- Botón tema -->
+    <button class="mobile-nav-icon-btn" id="theme-toggle-nav" title="Cambiar tema">
+        <i class="bi bi-moon"></i>
+    </button>
+
+    <!-- Hamburger -->
+    <button class="mobile-nav-hamburger" id="mobile-nav-toggle">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Menú desplegable móvil -->
+    <div class="mobile-nav-menu" id="mobile-nav-menu">
+        <a href="{{ inicio_url }}" class="mobile-nav-item {% if request.path == inicio_url %}active{% endif %}">
+            <i class="bi bi-house-door"></i> Inicio
+        </a>
+
+        {% if not navbar_simplificado %}
+        {% if tiene_permiso('sim_usar') %}
+        <a href="/simulador" class="mobile-nav-item {% if request.path == '/simulador' %}active{% endif %}">
+            <i class="bi bi-calculator"></i> Simulador
+        </a>
+        {% endif %}
+
+        {% if tiene_permiso('cap_usar') %}
+        <a href="/capacidad_pago" class="mobile-nav-item {% if request.path == '/capacidad_pago' %}active{% endif %}">
+            <i class="bi bi-cash-stack"></i> Capacidad de Pago
+        </a>
+        {% endif %}
+
+        {% if tiene_permiso('sco_ejecutar') %}
+        <a href="/scoring" class="mobile-nav-item {% if request.path == '/scoring' %}active{% endif %}">
+            <i class="bi bi-graph-up"></i> Scoring
+        </a>
+        {% endif %}
+
+        {% if tiene_alguno_de(['sim_hist_propio', 'sim_hist_equipo', 'sim_hist_todos']) %}
+        <a href="/historial_simulaciones" class="mobile-nav-item {% if request.path == '/historial_simulaciones' %}active{% endif %}">
+            <i class="bi bi-clock-history"></i> Historial Simulaciones
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if tiene_alguno_de(['sco_hist_propio', 'sco_hist_equipo', 'sco_hist_todos']) %}
+        <a href="/admin/historial-evaluaciones" class="mobile-nav-item {% if request.path == '/admin/historial-evaluaciones' %}active{% endif %}">
+            <i class="bi bi-file-earmark-text"></i> Historial Evaluaciones
+        </a>
+        {% endif %}
+
+        {% if not navbar_simplificado %}
+        {% if tiene_alguno_de(['com_enviar', 'com_ver_propios']) %}
+        <a href="/asesor/mis-casos-comite" class="mobile-nav-item {% if request.path == '/asesor/mis-casos-comite' %}active{% endif %} position-relative">
+            <i class="bi bi-folder-check"></i> Mis Casos Comité
+            <span class="badge rounded-pill bg-danger" id="badge-casos-comite-mobile" style="display: none; position: absolute; top: 8px; right: 8px; font-size: 0.6rem;">
+                0
+            </span>
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {# FIX v75: Botón Comité solo para roles NO asesor con permisos adecuados #}
+        {% if puede_ver_comite_general %}
+        <a href="/admin/comite-credito" class="mobile-nav-item {% if request.path == '/admin/comite-credito' %}active{% endif %}">
+            <i class="bi bi-clipboard-check"></i> Comité de Crédito
+        </a>
+        {% endif %}
+
+        {% if puede_admin_panel %}
+        <a href="/admin" class="mobile-nav-item {% if request.path == '/admin' %}active{% endif %}">
+            <i class="bi bi-gear"></i> Panel Admin
+        </a>
+        {% endif %}
+
+        {# Parámetros del Sistema - Solo con permiso cfg_params_sistema #}
+        {% if tiene_permiso('cfg_params_sistema') %}
+        <a href="/admin/parametros-sistema" class="mobile-nav-item {% if request.path == '/admin/parametros-sistema' %}active{% endif %}">
+            <i class="bi bi-sliders"></i> Parámetros
+        </a>
+        {% endif %}
+
+        <hr style="border-color: var(--border-color); margin: 8px 0;">
+
+        <a href="/logout" class="mobile-nav-item text-danger">
+            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+        </a>
+    </div>
+</div>
+
+<style>
+/* ========================================
+   ESTILOS MÍNIMOS DEL NAVBAR
+   Los estilos principales están en components.css
+   Aquí solo van estilos específicos que no deben ir en CSS global
+   ======================================== */
+
+/* Wrapper - position relative para el ::before del indicador de rol */
+.nav-wrapper-full {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+}
+
+/* Indicador de color por rol en la barra superior */
+.nav-wrapper-full[data-rol="admin"]::before,
+.mobile-nav[data-rol="admin"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #dc3545;
+}
+
+.nav-wrapper-full[data-rol="supervisor"]::before,
+.mobile-nav[data-rol="supervisor"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #6f42c1;
+}
+
+.nav-wrapper-full[data-rol="auditor"]::before,
+.mobile-nav[data-rol="auditor"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #ffc107;
+}
+
+.nav-wrapper-full[data-rol="gerente"]::before,
+.mobile-nav[data-rol="gerente"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #198754;
+}
+
+.nav-wrapper-full[data-rol="admin_tecnico"]::before,
+.mobile-nav[data-rol="admin_tecnico"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #0dcaf0;
+}
+
+.nav-wrapper-full[data-rol="comite_credito"]::before,
+.mobile-nav[data-rol="comite_credito"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #212529;
+}
+
+.nav-wrapper-full[data-rol="asesor"]::before,
+.mobile-nav[data-rol="asesor"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #0d6efd;
+}
+
+/* Mobile nav necesita position relative para ::before */
+.mobile-nav {
+    position: relative;
+}
+
+/* ========================================
+   RESPONSIVE: Ocultar texto en pantallas medianas
+   Mantener iconos siempre visibles
+   ======================================== */
+@media (max-width: 1400px) {
+    .nav-text {
+        display: none !important;
+    }
+    .nav-btn {
+        padding: 6px 10px !important;
+    }
+    /* Asegurar que iconos permanezcan visibles */
+    .nav-btn i,
+    .nav-btn .bi {
+        display: inline-block !important;
+    }
+}
+
+@media (min-width: 1400px) {
+    .nav-text {
+        display: inline !important;
+    }
+}
+
+/* ========================================
+   RESPONSIVE: Mostrar/ocultar navbar según tamaño
+   ======================================== */
+@media (max-width: 991px) {
+    .nav-wrapper-full {
+        display: none !important;
+    }
+    .mobile-nav {
+        display: flex !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .nav-wrapper-full {
+        display: block !important;
+    }
+    .mobile-nav {
+        display: none !important;
+    }
+}
+
+/* ========================================
+   FIX: Botón de inicio destacado
+   ======================================== */
+.nav-btn.btn-inicio {
+    border-color: var(--text-muted) !important;
+}
+
+.nav-btn.btn-inicio.active {
+    background: var(--bg-gradient) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+
+/* ========================================
+   DROPDOWN STYLING
+   ======================================== */
+.dropdown-menu {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+    background: var(--bg-secondary);
+}
+
+.dropdown-header {
+    background: var(--bg-secondary);
+}
+
+.dropdown-divider {
+    border-color: var(--border-color);
+}
+
+/* ========================================
+   MOBILE NAV ITEMS
+   ======================================== */
+.mobile-nav-icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    padding: 6px;
+    cursor: pointer;
+}
+
+.mobile-nav-hamburger {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.mobile-nav-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 8px;
+    flex-direction: column;
+    z-index: 999;
+}
+
+.mobile-nav-menu.show {
+    display: flex;
+}
+
+.mobile-nav-item {
+    padding: 10px 14px;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.mobile-nav-item:hover {
+    background: var(--bg-secondary);
+}
+
+/* FIX v75: Usar --primary en lugar de --primary-color (que no existe) */
+.mobile-nav-item.active {
+    background: var(--primary) !important;
+    background-color: #667eea !important;
+    color: white !important;
+}
+
+.mobile-nav-item.active i {
+    color: white !important;
+}
+
+.mobile-nav-item i {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Stats item hover */
+.nav-stat-item {
+    transition: all 0.2s ease;
+}
+
+.nav-stat-item:hover {
+    background: var(--bg-card) !important;
+    transform: translateY(-1px);
+}
+
+/* CORRECCION: Dropdown en móviles - evitar overflow */
+@media (max-width: 767px) {
+    .nav-group-right .dropdown-menu {
+        position: fixed !important;
+        top: 55px !important;
+        right: 8px !important;
+        left: auto !important;
+        max-width: calc(100vw - 16px);
+        width: 280px;
+        transform: none !important;
+        z-index: 1050;
+    }
+
+    #userDropdown {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #userDropdown .d-none.d-md-inline {
+        display: none !important;
+    }
+}
+</style>
+
+<!-- Script para el toggle de tema en dropdown y menú móvil -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle tema en dropdown
+    const themeToggleDropdown = document.getElementById('theme-toggle-dropdown');
+    if (themeToggleDropdown) {
+        themeToggleDropdown.addEventListener('click', function() {
+            const mainToggle = document.getElementById('theme-toggle-nav');
+            if (mainToggle) {
+                mainToggle.click();
+            } else {
+                const html = document.documentElement;
+                const currentTheme = html.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+            }
+        });
+    }
+
+    // Toggle menú móvil
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const mobileNavMenu = document.getElementById('mobile-nav-menu');
+
+    if (mobileNavToggle && mobileNavMenu) {
+        mobileNavToggle.addEventListener('click', function() {
+            mobileNavMenu.classList.toggle('show');
+            const icon = mobileNavToggle.querySelector('i');
+            if (mobileNavMenu.classList.contains('show')) {
+                icon.classList.remove('bi-list');
+                icon.classList.add('bi-x-lg');
+            } else {
+                icon.classList.remove('bi-x-lg');
+                icon.classList.add('bi-list');
+            }
+        });
+
+        // Cerrar menú al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (!mobileNavToggle.contains(e.target) && !mobileNavMenu.contains(e.target)) {
+                mobileNavMenu.classList.remove('show');
+                const icon = mobileNavToggle.querySelector('i');
+                icon.classList.remove('bi-x-lg');
+                icon.classList.add('bi-list');
+            }
+        });
+    }
+});
+</script>

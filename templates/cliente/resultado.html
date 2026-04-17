@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado Simulación - Loansi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <style>
+        /* Botón de tema que se mueve con el scroll */
+        .theme-toggle-result {
+            position: absolute;  /* Cambiado de fixed a absolute */
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle-result:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .theme-toggle-result {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        .resultado-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card-resultado {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header-resultado {
+            background: linear-gradient(135deg, var(--primary), #4c8bff);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .monto-resultado {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        .cuota-resultado {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .cuota-valor {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+
+        .info-legal {
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+
+        .info-legal-toggle {
+            cursor: pointer;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .info-legal-toggle:hover {
+            text-decoration: underline;
+        }
+
+        .info-legal-content {
+            display: none;
+            margin-top: 10px;
+            padding: 15px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .info-legal-content.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .theme-toggle-result {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }
+
+            .resultado-container {
+                padding: 15px;
+                margin: 20px auto;
+            }
+
+            .monto-resultado {
+                font-size: 2rem;
+            }
+
+            .cuota-valor {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light" style="position: relative; min-height: 100vh;">
+    <!-- Botón de tema flotante -->
+    <button class="theme-toggle-result" aria-label="Cambiar tema">
+        <i class="bi bi-moon-fill"></i>
+    </button>
+
+    <div class="resultado-container">
+        <div class="card card-resultado">
+            <div class="card-header-resultado">
+                <h2><i class="bi bi-check-circle"></i> Simulación Completada</h2>
+                <p class="mb-0">{{ tipo_credito }}</p>
+            </div>
+
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h5 class="text-muted">Monto Solicitado</h5>
+                    <div class="monto-resultado">${{ monto_solicitado }}</div>
+                </div>
+
+                <!-- Monto a desembolsar (destacado) -->
+                <div class="text-center mb-4" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <h5 style="color: rgba(255,255,255,0.9); margin-bottom: 10px;">
+                        <i class="bi bi-cash-stack me-2"></i>Recibirás en tu Cuenta
+                    </h5>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: white; margin-bottom: 8px;">
+                        ${{ monto_a_desembolsar }}
+                    </div>
+                    <small style="color: white !important; font-weight: 600; font-size: 0.95rem; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                        {% if not desembolso_completo %}
+                        (Descontados los costos iniciales)
+                        {% else %}
+                        (Monto completo solicitado)
+                        {% endif %}
+                    </small>
+                </div>
+
+                <div class="cuota-resultado text-center">
+                    <h5>{{ tipo_cuota }}</h5>
+                    <div class="cuota-valor">${{ cuota }}</div>
+                    <small class="text-muted">Por {{ plazo }} {{ plazo_tipo }}</small>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-6 text-center">
+                        <small class="text-muted">Tasa E.A.</small>
+                        <div class="fw-bold">{{ tasa_efectiva_anual }}%</div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <small class="text-muted">Tasa Mensual</small>
+                        <div class="fw-bold">{{ tasa_mensual }}%</div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="alert alert-info">
+                    <i class="bi bi-calendar-check"></i>
+                    <strong>Primer pago estimado:</strong> {{ primer_pago }}
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <a href="/" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-repeat"></i> Nueva Simulación
+                    </a>
+                </div>
+
+                <!-- Información legal desplegable -->
+                <div class="info-legal">
+                    <a href="#" class="info-legal-toggle" onclick="toggleInfoLegal(event)">
+                        <i class="bi bi-info-circle"></i> Información Legal y Condiciones
+                    </a>
+                    <div class="info-legal-content" id="infoLegalContent">
+                        <h6>Información Legal</h6>
+                        <p>
+                            <strong>AVISO IMPORTANTE:</strong> Esta simulación es únicamente informativa y no constituye
+                            una oferta vinculante de crédito. Los valores mostrados son aproximados y pueden variar según
+                            las políticas de crédito vigentes y el análisis individual de cada solicitud.
+                        </p>
+                        <p>
+                            <strong>Tasas y costos:</strong> Las tasas de interés mostradas corresponden a las vigentes
+                            en la fecha de la simulación y están sujetas a cambios sin previo aviso. Los costos asociados
+                            pueden incluir seguros, gastos administrativos y otros cargos que serán informados al momento
+                            de la aprobación del crédito.
+                        </p>
+                        <p>
+                            <strong>Requisitos:</strong> La aprobación del crédito está sujeta a verificación de información,
+                            análisis de capacidad de pago y cumplimiento de políticas internas de crédito. Loansi se reserva
+                            el derecho de aprobar o rechazar cualquier solicitud de crédito.
+                        </p>
+                        <p class="mb-0">
+                            <strong>Protección de datos:</strong> Sus datos personales serán tratados conforme a nuestra
+                            política de privacidad y la normativa vigente en protección de datos personales.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-3 text-muted">
+            <small>© 2025 Loansi - Simulador de Crédito</small>
+        </div>
+    </div>
+
+    <script>
+        function toggleInfoLegal(event) {
+            event.preventDefault();
+            const content = document.getElementById('infoLegalContent');
+            content.classList.toggle('show');
+        }
+    </script>
+    <script src="/static/js/theme-unified.js"></script>
+</body>
+</html>

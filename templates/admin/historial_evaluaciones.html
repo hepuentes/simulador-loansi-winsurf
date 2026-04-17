@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Evaluaciones - Loansi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <style>
+        /* Estilos para tarjetas de estadísticas clickeables */
+        .stat-card {
+            border-radius: 16px;
+            padding: 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .stat-card.active {
+            border-color: #212529 !important;
+            box-shadow: 0 0 0 4px rgba(33, 37, 41, 0.2);
+        }
+
+        .stat-card .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .stat-card .stat-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2rem;
+            opacity: 0.7;
+        }
+
+        /* Colores fuertes para las tarjetas */
+        .stat-card-total {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
+
+        .stat-card-aprobados {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+            color: white !important;
+        }
+
+        .stat-card-rechazados {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%) !important;
+            color: white !important;
+        }
+
+        .stat-card-tasa {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+            color: white !important;
+        }
+
+        /* FIX: Indicador de filtro activo - posición superior izquierda */
+        .filter-indicator {
+            display: none;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 0.65rem;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .stat-card.active .filter-indicator {
+            display: block;
+        }
+
+        /* Scope indicator */
+        .scope-indicator {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tabla responsiva mejorada */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+
+        .table th {
+            white-space: nowrap;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Badges mejorados */
+        .badge-score {
+            font-size: 0.85rem;
+            padding: 0.4em 0.8em;
+            border-radius: 8px;
+        }
+
+        /* Header mejorado */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0;
+        }
+
+        .page-title i {
+            font-size: 1.75rem;
+            color: var(--primary-color);
+        }
+
+        /* Filtros mejorados */
+        .filters-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* ===================== */
+        /* ESTILOS DEL MODAL     */
+        /* ===================== */
+
+        .modal-detail-section {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-detail-section h6 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Score display */
+        .score-display {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .score-item {
+            flex: 1;
+        }
+
+        .score-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Tabla de valores ingresados */
+        .valores-table {
+            width: 100%;
+            font-size: 0.85rem;
+        }
+
+        .valores-table th {
+            background: var(--bg-card);
+            padding: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .valores-table td {
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Criterios evaluados */
+        .criterio-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .criterio-row:last-child {
+            border-bottom: none;
+        }
+
+        .criterio-nombre {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .criterio-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .criterio-badge.positivo {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .criterio-badge.negativo {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .criterio-badge.neutro {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        [data-theme="dark"] .criterio-badge.positivo {
+            background: rgba(25, 135, 84, 0.3);
+            color: #75d99b;
+        }
+
+        [data-theme="dark"] .criterio-badge.negativo {
+            background: rgba(220, 53, 69, 0.3);
+            color: #f1aeb5;
+        }
+
+        [data-theme="dark"] .criterio-badge.neutro {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffe066;
+        }
+
+        /* Decision comite */
+        .decision-box {
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .decision-box.aprobado {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .decision-box.rechazado {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .decision-box.pendiente {
+            background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+            color: white;
+        }
+
+        .modificacion-item {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .mod-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .mod-value {
+            font-weight: 600;
+        }
+
+        .mod-change {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mod-old {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .mod-arrow {
+            color: var(--text-muted);
+        }
+
+        .mod-new {
+            color: #198754;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+{% include 'partials/navbar_asesor.html' %}
+<div class="container-fluid px-4 py-4" style="max-width: 1600px; margin: 0 auto;">
+
+    <!-- CSRF TOKEN -->
+    <input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h2 class="page-title">
+                <i class="bi bi-clock-history"></i>
+                <span>Historial de Evaluaciones</span>
+            </h2>
+            {% if scope %}
+            <div class="scope-indicator mt-2">
+                <i class="bi bi-person-badge"></i>
+                {% if scope == 'propio' %}
+                    Mostrando tus evaluaciones
+                {% elif scope == 'equipo' %}
+                    Mostrando evaluaciones de tu equipo
+                {% else %}
+                    Mostrando todas las evaluaciones
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if tiene_permiso('cfg_params_editar') %}
+            <button type="button" class="btn btn-outline-danger"
+                    onclick="confirmarLimpiarHistorial()">
+                <i class="bi bi-trash3"></i> <span class="d-none d-md-inline">Limpiar</span>
+            </button>
+            {% endif %}
+            <a href="{{ url_volver|default('/dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Inicio
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de estadísticas CLICKEABLES -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card stat-card-total {% if filtros.resultado == '' %}active{% endif %}"
+                 onclick="filtrarPorResultado('')"
+                 title="Click para ver todas las evaluaciones">
+                <i class="bi bi-stack stat-icon"></i>
+                <div class="filter-indicator">✓ Filtro activo</div>
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">Total Evaluaciones</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card stat-card-aprobados {% if filtros.resultado == 'aprobado' %}active{% endif %}"
+                 onclick="filtrarPorResultado('aprobado')"
+                 title="Click para filtrar solo aprobados">
+                <i class="bi bi-check-circle stat-icon"></i>
+                <div class="filter-indicator">✓ Filtro activo</div>
+                <div class="stat-number">{{ stats.aprobados }}</div>
+                <div class="stat-label">Aprobados</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card stat-card-rechazados {% if filtros.resultado == 'rechazado' %}active{% endif %}"
+                 onclick="filtrarPorResultado('rechazado')"
+                 title="Click para filtrar solo rechazados">
+                <i class="bi bi-x-circle stat-icon"></i>
+                <div class="filter-indicator">✓ Filtro activo</div>
+                <div class="stat-number">{{ stats.rechazados }}</div>
+                <div class="stat-label">Rechazados</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card stat-card-tasa" style="cursor: default;">
+                <i class="bi bi-percent stat-icon"></i>
+                <div class="stat-number">{{ stats.tasa_aprobacion }}%</div>
+                <div class="stat-label">Tasa Aprobación</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card">
+        <form class="row g-2 align-items-end" method="get" id="filtrosForm">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="resultado" id="filtroResultado" value="{{ filtros.resultado|default('') }}">
+
+            <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Asesor</label>
+                <select class="form-select form-select-sm" name="asesor">
+                    <option value="">Todos (mi alcance)</option>
+                    {% for a in asesores_disponibles %}
+                    <option value="{{ a }}" {% if filtros.asesor == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Desde</label>
+                <input type="date" class="form-control form-control-sm" name="desde" value="{{ filtros.desde }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Hasta</label>
+                <input type="date" class="form-control form-control-sm" name="hasta" value="{{ filtros.hasta }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Resultado</label>
+                <select class="form-select form-select-sm" name="resultado_select" id="resultadoSelect" onchange="actualizarFiltroResultado(this.value)">
+                    <option value="">Todos</option>
+                    <option value="aprobado" {% if filtros.resultado == 'aprobado' %}selected{% endif %}>Aprobados</option>
+                    <option value="rechazado" {% if filtros.resultado == 'rechazado' %}selected{% endif %}>Rechazados</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-sm btn-primary flex-fill" type="submit">
+                    <i class="bi bi-funnel me-1"></i>Filtrar
+                </button>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.historial_evaluaciones') }}">
+                    <i class="bi bi-x-lg"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Info de paginación -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Mostrando {{ pagination.start_idx }}-{{ pagination.end_idx }} de {{ pagination.total_logs }}</span>
+            <select class="form-select form-select-sm" style="width: auto;" onchange="cambiarPerPage(this.value)">
+                <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if pagination.per_page == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>100</option>
+            </select>
+            <span class="text-muted small">por página</span>
+        </div>
+
+        <!-- Indicador de filtro activo -->
+        {% if filtros.resultado %}
+        <div class="badge bg-{{ 'success' if filtros.resultado == 'aprobado' else 'danger' }} fs-6">
+            <i class="bi bi-funnel-fill me-1"></i>
+            Filtrando: {{ 'Aprobados' if filtros.resultado == 'aprobado' else 'Rechazados' }}
+            <a href="javascript:filtrarPorResultado('')" class="text-white ms-2" title="Quitar filtro">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tabla de evaluaciones -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-container">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Asesor</th>
+                            <th class="text-center">Score</th>
+                            <th>Nivel</th>
+                            <th class="text-center">Resultado</th>
+                            <th class="text-center">Comité</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="text-nowrap small">{{ log.timestamp[:16].replace('T', ' ') }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ log.cliente.split(' - CC ')[0] if ' - CC ' in log.cliente else log.cliente }}</div>
+                                <small class="text-muted">{{ log.tipo_credito }}</small>
+                            </td>
+                            <td>{{ log.asesor }}</td>
+                            <td class="text-center">
+                                <span class="badge badge-score bg-primary">{{ log.resultado.score_normalizado }}</span>
+                            </td>
+                            <td>
+                                {% set nivel = log.resultado.nivel|lower if log.resultado.nivel else '' %}
+                                <span class="badge {% if 'bajo' in nivel %}bg-success{% elif 'medio' in nivel or 'moderado' in nivel %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                    {{ log.resultado.nivel }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if log.resultado.aprobado %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Aprobado</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rechazado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if log.get('estado_comite') %}
+                                    {% set estado = log.estado_comite|lower if log.estado_comite else '' %}
+                                    {% if 'aprobado' in estado or estado == 'approved' %}
+                                    <span class="badge bg-success"><i class="bi bi-check2-all"></i> Aprobado</span>
+                                    {% elif 'rechazado' in estado or estado == 'rejected' %}
+                                    <span class="badge bg-danger"><i class="bi bi-x-lg"></i> Rechazado</span>
+                                    {% elif 'pendiente' in estado or estado == 'pending' %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pendiente</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ log.estado_comite }}</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary" onclick="verDetalle('{{ log.timestamp }}')" title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                                <span class="text-muted">No hay evaluaciones que coincidan con los filtros</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if pagination.total_pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item {% if pagination.page <= 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.page - 1 }}&per_page={{ pagination.per_page }}&asesor={{ filtros.asesor }}&desde={{ filtros.desde }}&hasta={{ filtros.hasta }}&resultado={{ filtros.resultado }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% for p in range(1, pagination.total_pages + 1) %}
+                {% if p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2) %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}&per_page={{ pagination.per_page }}&asesor={{ filtros.asesor }}&desde={{ filtros.desde }}&hasta={{ filtros.hasta }}&resultado={{ filtros.resultado }}">{{ p }}</a>
+                </li>
+                {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if pagination.page >= pagination.total_pages %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagination.page + 1 }}&per_page={{ pagination.per_page }}&asesor={{ filtros.asesor }}&desde={{ filtros.desde }}&hasta={{ filtros.hasta }}&resultado={{ filtros.resultado }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/theme-unified.js"></script>
+
+<script>
+    function filtrarPorResultado(resultado) {
+        document.getElementById('filtroResultado').value = resultado;
+        document.getElementById('resultadoSelect').value = resultado;
+        document.getElementById('filtrosForm').submit();
+    }
+
+    function actualizarFiltroResultado(valor) {
+        document.getElementById('filtroResultado').value = valor;
+    }
+
+    function cambiarPerPage(valor) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', '1');
+        url.searchParams.set('per_page', valor);
+        window.location.href = url.toString();
+    }
+
+    function confirmarLimpiarHistorial() {
+        if (confirm('¿Estás seguro de que deseas limpiar todo el historial? Esta acción no se puede deshacer.')) {
+            fetch('/api/limpiar-historial-evaluaciones', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.getElementById('csrf_token').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Historial limpiado correctamente');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo limpiar el historial'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        }
+    }
+</script>
+
+<!-- Modal Ver Detalle Completo -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" id="modalDetalleHeader" style="background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); color: white;">
+                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>Detalle de Evaluación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalDetalleBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Cargando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function _esc(x) {
+        return (x ?? '').toString().replace(/[&<>"']/g, (c) => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[c]));
+    }
+
+    function formatMoney(val) {
+        if (!val && val !== 0) return 'N/A';
+        return '$' + parseFloat(val).toLocaleString('es-CO', {maximumFractionDigits: 0});
+    }
+
+    function formatDate(ts) {
+        if (!ts) return 'N/A';
+        return ts.replace('T', ' ').substring(0, 19);
+    }
+
+    // Extraer nombre sin la cédula
+    function extractNombre(cliente) {
+        if (!cliente) return 'N/A';
+        const parts = cliente.split(' - CC ');
+        return parts[0] || cliente;
+    }
+
+    // Extraer cédula del cliente
+    function extractCedula(cliente, cedula) {
+        if (cedula) return cedula;
+        if (!cliente) return 'N/A';
+        const parts = cliente.split(' - CC ');
+        return parts[1] || 'N/A';
+    }
+
+    async function verDetalle(timestamp) {
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+        modal.show();
+
+        const body = document.getElementById('modalDetalleBody');
+        const header = document.getElementById('modalDetalleHeader');
+
+        try {
+            const resp = await fetch(`/api/detalle_evaluacion/${encodeURIComponent(timestamp)}`);
+            const data = await resp.json();
+
+            if (!resp.ok || !data.success || !data.evaluacion) {
+                body.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        No se pudo cargar el detalle de la evaluación
+                    </div>
+                `;
+                return;
+            }
+
+            const ev = data.evaluacion;
+            const resultado = ev.resultado || {};
+            const aprobado = resultado.aprobado;
+
+            // Cambiar color del header según resultado
+            if (aprobado) {
+                header.style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+            } else {
+                header.style.background = 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
+            }
+
+            // Extraer datos
+            const nombreCliente = ev.nombre_cliente || extractNombre(ev.cliente);
+            const cedulaCliente = ev.cedula || extractCedula(ev.cliente, null);
+            const score = resultado.score || resultado.score_normalizado || 0;
+            const scoreNorm = resultado.score_normalizado || score;
+            const datacredito = ev.datacredito || ev.puntaje_datacredito || 'N/A';
+            const nivelRiesgo = ev.nivel_riesgo || resultado.nivel || 'N/A';
+            const colorNivel = ev.color_nivel_riesgo || '#FFDC00';
+
+            // Determinar estado comité
+            const estadoComite = ev.estado_comite || '';
+            const esComiteAprobado = estadoComite === 'approved' || estadoComite === 'Aprobado';
+            const esComiteRechazado = estadoComite === 'rejected' || estadoComite === 'Rechazado';
+            const esComitePendiente = estadoComite === 'pending' || estadoComite === 'Pendiente';
+
+            // Construir HTML
+            let html = `
+                <!-- Información del Cliente -->
+                <div class="modal-detail-section">
+                    <h6><i class="bi bi-person"></i> Información del Cliente</h6>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Nombre</span>
+                            <span class="info-value">${_esc(nombreCliente)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cédula</span>
+                            <span class="info-value">${_esc(cedulaCliente)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Monto Solicitado</span>
+                            <span class="info-value">${formatMoney(ev.monto_solicitado)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Asesor</span>
+                            <span class="info-value">${_esc(ev.asesor)}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Línea de Crédito</span>
+                            <span class="info-value">${_esc(ev.linea_credito || ev.tipo_credito || 'N/A')}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fecha Evaluación</span>
+                            <span class="info-value">${formatDate(ev.timestamp)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado del Scoring -->
+                <div class="modal-detail-section">
+                    <h6><i class="bi bi-speedometer2"></i> Resultado del Scoring</h6>
+                    <div class="score-display">
+                        <div class="score-item">
+                            <div class="score-value text-primary">${parseFloat(score).toFixed(1)}</div>
+                            <div class="score-label">Score</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-value" style="color: ${datacredito < 500 ? '#dc3545' : datacredito < 650 ? '#ffc107' : '#198754'}">${datacredito}</div>
+                            <div class="score-label">DataCrédito</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-value" style="color: ${colorNivel}">${_esc(nivelRiesgo)}</div>
+                            <div class="score-label">Nivel</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Valores ingresados por el asesor (extraer de criterios_detalle)
+            if (ev.criterios_detalle && ev.criterios_detalle.length > 0) {
+                html += `
+                    <div class="modal-detail-section">
+                        <h6><i class="bi bi-pencil-square"></i> Valores Ingresados por el Asesor</h6>
+                        <table class="valores-table">
+                            <thead>
+                                <tr>
+                                    <th>Criterio</th>
+                                    <th>Valor Ingresado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                ev.criterios_detalle.forEach(c => {
+                    html += `
+                        <tr>
+                            <td>${_esc(c.nombre)}</td>
+                            <td>${_esc(c.valor || c.descripcion || 'N/A')}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // Criterios evaluados con puntos
+                html += `
+                    <div class="modal-detail-section">
+                        <h6><i class="bi bi-list-check"></i> Criterios Evaluados</h6>
+                `;
+
+                ev.criterios_detalle.forEach(c => {
+                    const puntaje = parseFloat(c.puntaje || 0);
+                    const peso = parseFloat(c.peso || 0);
+                    let badgeClass = 'neutro';
+                    if (puntaje > 0) badgeClass = 'positivo';
+                    else if (puntaje < 0) badgeClass = 'negativo';
+
+                    html += `
+                        <div class="criterio-row">
+                            <span class="criterio-nombre">${_esc(c.nombre)}</span>
+                            <span class="criterio-badge ${badgeClass}">${puntaje >= 0 ? '+' : ''}${puntaje.toFixed(1)} / ${peso}</span>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            }
+
+            // Decisión del Comité (si aplica)
+            if (estadoComite && ev.origen === 'Comité') {
+                let decisionClass = 'pendiente';
+                let decisionText = 'PENDIENTE';
+                let decisionIcon = 'bi-clock';
+
+                if (esComiteAprobado) {
+                    decisionClass = 'aprobado';
+                    decisionText = 'APROBADO';
+                    decisionIcon = 'bi-check-circle';
+                } else if (esComiteRechazado) {
+                    decisionClass = 'rechazado';
+                    decisionText = 'RECHAZADO';
+                    decisionIcon = 'bi-x-circle';
+                }
+
+                html += `
+                    <div class="modal-detail-section">
+                        <h6><i class="bi bi-people"></i> Decisión del Comité</h6>
+                        <div class="decision-box ${decisionClass} mb-3">
+                            <i class="bi ${decisionIcon} fs-4 me-2"></i>
+                            <strong>DECISIÓN: ${decisionText}</strong>
+                        </div>
+                `;
+
+                // Info de quién decidió
+                const decisionAdmin = ev.decision_admin || {};
+                if (decisionAdmin.admin || ev.decidido_por) {
+                    html += `
+                        <div class="d-flex justify-content-between text-muted small mb-3">
+                            <span><i class="bi bi-person me-1"></i>Decidido por: ${_esc(decisionAdmin.admin || ev.decidido_por || 'N/A')}</span>
+                            <span><i class="bi bi-calendar me-1"></i>Fecha: ${formatDate(decisionAdmin.timestamp || ev.fecha_decision)}</span>
+                        </div>
+                    `;
+                }
+
+                // Modificaciones aplicadas
+                if (ev.monto_aprobado || ev.nivel_riesgo_ajustado) {
+                    html += `
+                        <div class="alert alert-info mb-3">
+                            <strong><i class="bi bi-pencil me-2"></i>Modificaciones Aplicadas</strong>
+                        </div>
+                        <div class="row g-2 mb-3">
+                    `;
+
+                    if (ev.monto_aprobado && ev.monto_aprobado !== ev.monto_solicitado) {
+                        html += `
+                            <div class="col-md-6">
+                                <div class="modificacion-item">
+                                    <div class="mod-label"><i class="bi bi-cash me-1"></i>Monto</div>
+                                    <div class="mod-change">
+                                        <span class="mod-old">Solicitado: ${formatMoney(ev.monto_solicitado)}</span>
+                                        <span class="mod-arrow">→</span>
+                                        <span class="mod-new">Aprobado: ${formatMoney(ev.monto_aprobado)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    if (ev.nivel_riesgo_ajustado && ev.nivel_riesgo_ajustado !== ev.nivel_riesgo) {
+                        html += `
+                            <div class="col-md-6">
+                                <div class="modificacion-item">
+                                    <div class="mod-label"><i class="bi bi-shield me-1"></i>Nivel de Riesgo</div>
+                                    <div class="mod-change">
+                                        <span class="mod-old">Calculado: ${_esc(ev.nivel_riesgo)}</span>
+                                        <span class="mod-arrow">→</span>
+                                        <span class="mod-new">Ajustado: ${_esc(ev.nivel_riesgo_ajustado)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    html += `</div>`;
+                }
+
+                // Justificación
+                if (ev.justificacion_modificacion || decisionAdmin.motivo) {
+                    html += `
+                        <div class="alert alert-secondary">
+                            <strong><i class="bi bi-chat-quote me-2"></i>Justificación</strong>
+                            <p class="mb-0 mt-2">${_esc(ev.justificacion_modificacion || decisionAdmin.motivo)}</p>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            }
+
+            body.innerHTML = html;
+
+        } catch (e) {
+            body.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error al cargar el detalle: ${_esc(e.message)}
+                </div>
+            `;
+        }
+    }
+</script>
+
+</body>
+</html>

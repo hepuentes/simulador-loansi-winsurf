@@ -1,0 +1,212 @@
+{% extends 'dashboards/_base_dashboard.html' %}
+
+{% block title %}Panel Técnico{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-3 mb-4">
+    <!-- Stat: Total usuarios -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-value">{{ stats.total_usuarios or 0 }}</div>
+            <div class="stat-label">Usuarios activos</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Líneas activas -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-credit-card"></i>
+            </div>
+            <div class="stat-value">{{ stats.lineas_activas or 0 }}</div>
+            <div class="stat-label">Líneas de crédito</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Evaluaciones hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
+            <div class="stat-value">{{ stats.evaluaciones_hoy or 0 }}</div>
+            <div class="stat-label">Evaluaciones hoy</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Pendientes comité -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="stat-value">{{ stats.pendientes_comite or 0 }}</div>
+            <div class="stat-label">Pendientes comité</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: Accesos de configuración -->
+    <div class="col-lg-4">
+        <div class="quick-actions">
+            <h5><i class="bi bi-gear-wide-connected me-2"></i>Panel de Administración</h5>
+            
+            {% if tiene_alguno_de(['cfg_sco_ver', 'cfg_sco_editar']) %}
+            <a href="/admin#ScoringInterno" class="quick-action-btn">
+                <i class="bi bi-sliders text-primary"></i>
+                <span>Configurar Scoring</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['cfg_tasas_ver', 'cfg_tasas_editar']) %}
+            <a href="/admin#TasasCredito" class="quick-action-btn">
+                <i class="bi bi-percent text-success"></i>
+                <span>Tasas de Crédito</span>
+            </a>
+            <a href="/admin#CostosAsociados" class="quick-action-btn">
+                <i class="bi bi-cash-coin text-info"></i>
+                <span>Costos Asociados</span>
+            </a>
+            <a href="/admin#Seguros" class="quick-action-btn">
+                <i class="bi bi-shield-check text-warning"></i>
+                <span>Configurar Seguros</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['usr_ver', 'usr_crear']) %}
+            <a href="/admin#Usuarios" class="quick-action-btn">
+                <i class="bi bi-people text-secondary"></i>
+                <span>Gestión de Usuarios</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('usr_permisos') %}
+            <a href="/admin#Permisos" class="quick-action-btn">
+                <i class="bi bi-key text-danger"></i>
+                <span>Gestión de Permisos</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Info del sistema -->
+        <div class="data-panel">
+            <h5><i class="bi bi-info-circle"></i> Sistema</h5>
+            <ul class="data-list">
+                <li>
+                    <span class="item-label">Versión</span>
+                    <span class="item-value">{{ stats.version_sistema or 'N/A' }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Fecha</span>
+                    <span class="item-value">{{ stats.fecha_actual or 'N/A' }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Columna central: Usuarios por rol -->
+    <div class="col-lg-4">
+        <div class="data-panel">
+            <h5><i class="bi bi-people"></i> Usuarios por Rol</h5>
+            
+            {% if stats.usuarios_por_rol %}
+            <ul class="data-list">
+                {% for rol_name, cantidad in stats.usuarios_por_rol.items() %}
+                <li>
+                    <span class="item-label">
+                        {% if rol_name == 'admin' %}
+                        <span class="badge bg-danger">{{ rol_name }}</span>
+                        {% elif rol_name == 'supervisor' %}
+                        <span class="badge bg-purple">{{ rol_name }}</span>
+                        {% elif rol_name == 'auditor' %}
+                        <span class="badge bg-warning text-dark">{{ rol_name }}</span>
+                        {% elif rol_name == 'gerente' %}
+                        <span class="badge bg-success">{{ rol_name }}</span>
+                        {% elif rol_name == 'admin_tecnico' %}
+                        <span class="badge bg-info">{{ rol_name }}</span>
+                        {% elif rol_name == 'comite_credito' %}
+                        <span class="badge bg-dark">{{ rol_name }}</span>
+                        {% else %}
+                        <span class="badge bg-primary">{{ rol_name }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="item-value">{{ cantidad }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">Sin datos</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Columna derecha: Estado del comité -->
+    <div class="col-lg-4">
+        <div class="data-panel">
+            <h5><i class="bi bi-clipboard-check"></i> Estado Comité</h5>
+            
+            {% if stats.casos_comite %}
+            <ul class="data-list">
+                {% for estado, cantidad in stats.casos_comite.items() %}
+                <li>
+                    <span class="item-label">
+                        {% if estado == 'pending' %}
+                        <span class="badge bg-warning text-dark">Pendientes</span>
+                        {% elif estado == 'approved' %}
+                        <span class="badge bg-success">Aprobados</span>
+                        {% elif estado == 'rejected' %}
+                        <span class="badge bg-danger">Rechazados</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ estado }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="item-value">{{ cantidad }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">Sin casos</p>
+            </div>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['com_ver_todos', 'com_ver_pendientes']) %}
+            <div class="text-center mt-3">
+                <a href="/admin/comite-credito" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-right me-1"></i> Ver Comité
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Acceso a auditoría -->
+        {% if tiene_permiso('aud_ver_todos') %}
+        <div class="data-panel">
+            <h5><i class="bi bi-shield-check"></i> Auditoría</h5>
+            <a href="/admin/historial-evaluaciones" class="quick-action-btn">
+                <i class="bi bi-file-earmark-text text-primary"></i>
+                <span>Historial Global</span>
+            </a>
+            <a href="/historial_simulaciones" class="quick-action-btn">
+                <i class="bi bi-clock-history text-info"></i>
+                <span>Simulaciones</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración Comité de Crédito - Loansi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <style>
+        .zona-visual {
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            overflow: hidden;
+            font-size: 0.75rem;
+        }
+        .zona-rechazo { background-color: #dc3545; color: white; }
+        .zona-comite { background-color: #ffc107; color: black; }
+        .zona-aprobado { background-color: #28a745; color: white; }
+        .config-card { transition: all 0.3s ease; }
+        .config-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .badge-rol { font-size: 0.8rem; }
+        .section-header { cursor: pointer; }
+        .section-header:hover { background-color: rgba(0,0,0,0.03); }
+        .criterio-group { border-left: 3px solid #0d6efd; padding-left: 10px; margin-bottom: 15px; }
+        .criterio-group h6 { color: #0d6efd; font-size: 0.85rem; }
+        .alerta-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 4px; background: #f8f9fa; margin-bottom: 8px; }
+        .global-config-card { border: 2px solid #0d6efd; }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar_asesor.html' %}
+    
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="bi bi-gear-fill me-2"></i>Configuración del Comité de Crédito</h2>
+                <p class="text-muted mb-0">Configura umbrales de revisión manual por línea de crédito</p>
+            </div>
+            <div>
+                <a href="{{ url_for('comite.comite_credito') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Volver al Comité
+                </a>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- NIVEL 1: CONFIGURACIÓN GLOBAL DEL COMITÉ -->
+        <!-- ================================================================ -->
+        <div class="card global-config-card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-globe me-2"></i>Configuración Global del Comité
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Tiempo Máximo para Decisión</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="global_tiempo_max" 
+                                   value="{{ config_global.tiempo_max_decision_horas }}" min="1" max="168">
+                            <span class="input-group-text">horas</span>
+                        </div>
+                        <small class="text-muted">Tiempo límite antes de expirar</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Acción al Expirar</label>
+                        <select class="form-select" id="global_accion_expirar">
+                            <option value="rechazar" {% if config_global.accion_al_expirar == 'rechazar' %}selected{% endif %}>
+                                Rechazar automáticamente
+                            </option>
+                            <option value="escalar" {% if config_global.accion_al_expirar == 'escalar' %}selected{% endif %}>
+                                Escalar a administrador
+                            </option>
+                        </select>
+                        <small class="text-muted">Qué hacer cuando expira el tiempo</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Sistema de Alertas</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="global_alertas" 
+                                   {% if config_global.alertas_habilitadas %}checked{% endif %}>
+                            <label class="form-check-label" for="global_alertas">
+                                Alertas visuales habilitadas
+                            </label>
+                        </div>
+                        <small class="text-muted">Mostrar alertas en casos pendientes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <button class="btn btn-primary" onclick="guardarConfigGlobal()">
+                    <i class="bi bi-save me-1"></i>Guardar Configuración Global
+                </button>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- NIVEL 2: CONFIGURACIÓN POR LÍNEA DE CRÉDITO -->
+        <!-- ================================================================ -->
+        <h4 class="mb-3"><i class="bi bi-building me-2"></i>Configuración por Línea de Crédito</h4>
+        
+        <div class="row">
+            {% for config in configs_lineas %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card config-card h-100 {% if config.comite_activo %}border-success{% else %}border-secondary{% endif %}">
+                            <div class="card-header d-flex justify-content-between align-items-center {% if config.comite_activo %}bg-success-subtle{% else %}bg-secondary-subtle{% endif %}">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-building me-1"></i>{{ config.linea_nombre }}
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" 
+                                           id="activo_{{ config.linea_id }}"
+                                           {% if config.comite_activo %}checked{% endif %}
+                                           onchange="toggleComiteActivo({{ config.linea_id }}, this.checked)">
+                                    <label class="form-check-label" for="activo_{{ config.linea_id }}">
+                                        {% if config.comite_activo %}Activo{% else %}Inactivo{% endif %}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Zona visual de scoring - ESCALA 0-100 -->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Zonas de Decisión (escala 0-100)</label>
+                                    {% set pct_comite = config.puntaje_revision|default(22) %}
+                                    {% set pct_aprobacion = config.puntaje_minimo|default(38) %}
+                                    <div class="zona-visual" id="zona_visual_{{ config.linea_id }}">
+                                        <div class="zona-rechazo d-flex align-items-center justify-content-center" 
+                                             id="zona_rechazo_{{ config.linea_id }}"
+                                             style="width: {{ pct_comite }}%;">
+                                            <small>Rechazo</small>
+                                        </div>
+                                        <div class="zona-comite d-flex align-items-center justify-content-center" 
+                                             id="zona_comite_{{ config.linea_id }}"
+                                             style="width: {{ pct_aprobacion - pct_comite }}%;">
+                                            <small>Comité</small>
+                                        </div>
+                                        <div class="zona-aprobado d-flex align-items-center justify-content-center" 
+                                             id="zona_aprobado_{{ config.linea_id }}"
+                                             style="width: {{ 100 - pct_aprobacion }}%;">
+                                            <small>Aprobado</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1" id="zona_labels_{{ config.linea_id }}">
+                                        <small class="text-muted">0</small>
+                                        <small class="text-danger" id="label_comite_{{ config.linea_id }}">{{ pct_comite }}</small>
+                                        <small class="text-warning" id="label_aprobacion_{{ config.linea_id }}">{{ pct_aprobacion }}</small>
+                                        <small class="text-muted">100</small>
+                                    </div>
+                                </div>
+
+                                <!-- Configuración rápida - ESCALA 0-100 -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small">Puntaje Mín. Comité</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               id="puntaje_revision_{{ config.linea_id }}"
+                                               value="{{ config.puntaje_revision }}" min="0" max="99"
+                                               data-umbral-aprobacion="{{ config.puntaje_minimo_aprobacion|default(config.puntaje_minimo, true) }}"
+                                               data-linea-id="{{ config.linea_id }}"
+                                               oninput="actualizarBarraZonas(this)">
+                                        <small class="text-muted">Escala 0-100 (score interno). Debe ser menor al umbral de aprobación.</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted">Umbral Aprobación Auto</label>
+                                        <div class="form-control form-control-sm bg-light text-muted" style="cursor: not-allowed;">
+                                            {{ config.puntaje_minimo_aprobacion|default(config.puntaje_minimo, true) }}
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle"></i> Configurado en Scoring Interno
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small">Tiempo Máx. (horas)</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               id="tiempo_max_{{ config.linea_id }}"
+                                               value="{{ config.tiempo_max }}" min="1" max="168">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Votos Mínimos</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               id="votos_minimos_{{ config.linea_id }}"
+                                               value="{{ config.votos_minimos }}" min="1" max="5">
+                                    </div>
+                                </div>
+
+                                <!-- ============================================ -->
+                                <!-- SECCIÓN B: CRITERIOS BORDERLINE (Colapsable) -->
+                                <!-- ============================================ -->
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="section-header d-flex justify-content-between align-items-center p-2 rounded"
+                                         data-bs-toggle="collapse" 
+                                         data-bs-target="#criterios_{{ config.linea_id }}">
+                                        <span class="fw-bold text-primary">
+                                            <i class="bi bi-list-check me-1"></i>Criterios Borderline
+                                        </span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </div>
+                                    <div class="collapse" id="criterios_{{ config.linea_id }}">
+                                        <div class="pt-3">
+                                            {% set cb = config.criterios_borderline %}
+                                            
+                                            <!-- Categoría 1: Bureau -->
+                                            <div class="criterio-group">
+                                                <h6><i class="bi bi-bank me-1"></i>Bureau (DataCrédito)</h6>
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Score DC Mín.</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_score_dc_{{ config.linea_id }}"
+                                                               value="{{ cb.score_datacredito_minimo }}" min="150" max="950">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Mora Fin. Máx (días)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_mora_fin_{{ config.linea_id }}"
+                                                               value="{{ cb.mora_max_financiero_dias }}" min="0" max="999">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Mora Telcos Máx (COP)</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text">$</span>
+                                                            <input type="text" class="form-control form-control-sm" 
+                                                                   id="cb_mora_tel_{{ config.linea_id }}"
+                                                                   value="{{ '{:,.0f}'.format(cb.mora_max_telcos_dias|default(200000)) }}" 
+                                                                   oninput="formatCOPInput(this)"
+                                                                   min="0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Consultas Máx (60d)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_consultas_{{ config.linea_id }}"
+                                                               value="{{ cb.consultas_max_60_dias }}" min="0" max="50">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Categoría 2: Capacidad -->
+                                            <div class="criterio-group">
+                                                <h6><i class="bi bi-cash-coin me-1"></i>Capacidad de Pago</h6>
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">DTI Máximo (%)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_dti_{{ config.linea_id }}"
+                                                               value="{{ cb.dti_maximo }}" min="0" max="100" step="0.1">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Ingreso Mín. (COP)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_ingreso_{{ config.linea_id }}"
+                                                               value="{{ cb.ingreso_minimo }}" min="0" step="100000">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Categoría 3: Estabilidad -->
+                                            <div class="criterio-group">
+                                                <h6><i class="bi bi-clock-history me-1"></i>Estabilidad</h6>
+                                                <div class="row g-2">
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Antigüedad Lab. (meses)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_antiguedad_{{ config.linea_id }}"
+                                                               value="{{ cb.antiguedad_laboral_min_meses }}" min="0" max="600">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label small">Historial Mín. (meses)</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               id="cb_historial_{{ config.linea_id }}"
+                                                               value="{{ cb.historial_pagos_min_meses }}" min="0" max="600">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ============================================ -->
+                                <!-- SECCIÓN C: SEÑALES DE ALERTA (Colapsable) -->
+                                <!-- ============================================ -->
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="section-header d-flex justify-content-between align-items-center p-2 rounded"
+                                         data-bs-toggle="collapse" 
+                                         data-bs-target="#alertas_{{ config.linea_id }}">
+                                        <span class="fw-bold text-warning">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Señales de Alerta
+                                        </span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </div>
+                                    <div class="collapse" id="alertas_{{ config.linea_id }}">
+                                        <div class="pt-3" id="alertas_container_{{ config.linea_id }}">
+                                            {% if config.alertas_dinamicas %}
+                                                {% set secciones_vistas = [] %}
+                                                {% for alerta in config.alertas_dinamicas %}
+                                                    {% if alerta.seccion not in secciones_vistas %}
+                                                        {% if secciones_vistas %}
+                                                            </div>
+                                                        {% endif %}
+                                                        <div class="mb-2">
+                                                            <small class="fw-bold text-primary d-block mb-1">
+                                                                <i class="bi bi-tag me-1"></i>{{ alerta.seccion }}
+                                                            </small>
+                                                        {% if secciones_vistas.append(alerta.seccion) %}{% endif %}
+                                                    {% endif %}
+                                                    
+                                                    {% set tipo = alerta.tipo_campo %}
+                                                    {% set codigo = alerta.criterio_codigo %}
+                                                    
+                                                    <div class="alerta-item" data-criterio="{{ codigo }}" data-tipo="{{ tipo }}">
+                                                        <input type="checkbox" class="form-check-input alerta-check" 
+                                                               data-linea="{{ config.linea_id }}"
+                                                               data-criterio="{{ codigo }}"
+                                                               {% if alerta.habilitada %}checked{% endif %}>
+                                                        <label class="flex-grow-1 small">{{ alerta.nombre }}</label>
+                                                        
+                                                        {% if tipo in ('composite', 'select', 'seleccion') and alerta.rangos %}
+                                                            <select class="form-select form-select-sm alerta-valor-select" 
+                                                                    data-linea="{{ config.linea_id }}"
+                                                                    data-criterio="{{ codigo }}"
+                                                                    style="width: 140px;">
+                                                                <option value="">-- Opción --</option>
+                                                                {% for rango in alerta.rangos %}
+                                                                    <option value="{{ rango.puntos|default(rango.valor, true) }}" 
+                                                                            {% if alerta.valor_alerta == (rango.puntos|default(rango.valor, true))|string %}selected{% endif %}>
+                                                                        {{ rango.etiqueta|default(rango.descripcion, true) }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        {% elif tipo in ('number', 'numerico', 'currency', 'percentage') %}
+                                                            <select class="form-select form-select-sm alerta-operador" 
+                                                                    data-linea="{{ config.linea_id }}"
+                                                                    data-criterio="{{ codigo }}"
+                                                                    style="width: 55px;">
+                                                                <option value="<" {% if alerta.operador == '<' %}selected{% endif %}>&lt;</option>
+                                                                <option value=">" {% if alerta.operador == '>' %}selected{% endif %}>&gt;</option>
+                                                            </select>
+                                                            <input type="number" class="form-control form-control-sm alerta-valor-num" 
+                                                                   data-linea="{{ config.linea_id }}"
+                                                                   data-criterio="{{ codigo }}"
+                                                                   value="{{ alerta.valor_umbral|default('', true) }}" 
+                                                                   style="width: 80px;" step="any">
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                                {% if secciones_vistas %}
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <p class="text-muted small">No hay criterios de scoring configurados para esta línea.</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <button class="btn btn-sm btn-primary w-100" 
+                                        onclick="guardarTodoLinea({{ config.linea_id }})">
+                                    <i class="bi bi-save me-1"></i>Guardar Configuración
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme-unified.js') }}"></script>
+    
+    <script>
+        // Actualizar barra visual de zonas dinámicamente al cambiar Puntaje Mín. Comité
+        function actualizarBarraZonas(input) {
+            const lineaId = input.dataset.lineaId;
+            const umbralAprobacion = parseInt(input.dataset.umbralAprobacion) || 38;
+            let puntajeComite = parseInt(input.value) || 0;
+            
+            // Clamp a rango válido 0-99
+            if (puntajeComite < 0) puntajeComite = 0;
+            if (puntajeComite > 99) puntajeComite = 99;
+            
+            // Validar que sea menor al umbral
+            if (puntajeComite >= umbralAprobacion) {
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+            
+            // Calcular anchos de zonas
+            const anchoRechazo = Math.max(puntajeComite, 1);
+            const anchoComite = Math.max(umbralAprobacion - puntajeComite, 1);
+            const anchoAprobado = Math.max(100 - umbralAprobacion, 1);
+            
+            // Actualizar barra visual
+            const zonaRechazo = document.getElementById(`zona_rechazo_${lineaId}`);
+            const zonaComite = document.getElementById(`zona_comite_${lineaId}`);
+            const zonaAprobado = document.getElementById(`zona_aprobado_${lineaId}`);
+            
+            if (zonaRechazo) zonaRechazo.style.width = anchoRechazo + '%';
+            if (zonaComite) zonaComite.style.width = anchoComite + '%';
+            if (zonaAprobado) zonaAprobado.style.width = anchoAprobado + '%';
+            
+            // Actualizar labels numéricos
+            const labelComite = document.getElementById(`label_comite_${lineaId}`);
+            const labelAprobacion = document.getElementById(`label_aprobacion_${lineaId}`);
+            if (labelComite) labelComite.textContent = puntajeComite;
+            if (labelAprobacion) labelAprobacion.textContent = umbralAprobacion;
+        }
+
+        // Toggle comité activo
+        async function toggleComiteActivo(lineaId, activo) {
+            try {
+                const response = await fetch(`/api/comite/config/${lineaId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ activo: activo })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Actualizar UI
+                    const label = document.querySelector(`label[for="activo_${lineaId}"]`);
+                    if (label) {
+                        label.textContent = activo ? 'Activo' : 'Inactivo';
+                    }
+                    showToast(activo ? 'Comité activado' : 'Comité desactivado', 'success');
+                } else {
+                    showToast('Error: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error de conexión', 'danger');
+            }
+        }
+
+        // Guardar configuración de línea (interno, retorna {ok, error})
+        async function guardarConfigLineaInterno(lineaId) {
+            const inputRevision = document.getElementById(`puntaje_revision_${lineaId}`);
+            const umbralAprobacion = parseInt(inputRevision.dataset.umbralAprobacion) || 38;
+            const puntajeComite = parseInt(inputRevision.value);
+            
+            // Validar rango 0-100
+            if (isNaN(puntajeComite) || puntajeComite < 0 || puntajeComite > 99) {
+                return {ok: false, error: 'Puntaje Mín. Comité debe estar entre 0 y 99 (escala 0-100)'};
+            }
+            
+            // Validar que puntaje comité < umbral aprobación
+            if (puntajeComite >= umbralAprobacion) {
+                return {ok: false, error: `Puntaje Mín. Comité (${puntajeComite}) debe ser menor al Umbral de Aprobación (${umbralAprobacion})`};
+            }
+            
+            const datos = {
+                activo: document.getElementById(`activo_${lineaId}`).checked,
+                puntaje_revision_manual: puntajeComite,
+                tiempo_max_respuesta_horas: parseInt(document.getElementById(`tiempo_max_${lineaId}`).value),
+                num_minimo_votos: parseInt(document.getElementById(`votos_minimos_${lineaId}`).value)
+            };
+            
+            const response = await fetch(`/api/comite/config/${lineaId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(datos)
+            });
+            
+            const data = await response.json();
+            return data.success ? {ok: true} : {ok: false, error: data.error};
+        }
+
+        // ================================================================
+        // NIVEL 1: Guardar Configuración Global
+        // ================================================================
+        async function guardarConfigGlobal() {
+            const datos = {
+                tiempo_max_decision_horas: parseInt(document.getElementById('global_tiempo_max').value),
+                accion_al_expirar: document.getElementById('global_accion_expirar').value,
+                alertas_habilitadas: document.getElementById('global_alertas').checked
+            };
+            
+            try {
+                const response = await fetch('/api/comite/config-global', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(datos)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Configuración global guardada', 'success');
+                } else {
+                    showToast('Error: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error de conexión', 'danger');
+            }
+        }
+
+        // ================================================================
+        // NIVEL 2 - SECCIÓN B: Guardar Criterios Borderline (interno)
+        // ================================================================
+        async function guardarCriteriosBorderlineInterno(lineaId) {
+            const datos = {
+                score_datacredito_minimo: parseInt(document.getElementById(`cb_score_dc_${lineaId}`).value),
+                mora_max_financiero_dias: parseInt(document.getElementById(`cb_mora_fin_${lineaId}`).value),
+                mora_max_telcos_dias: parseCOPValue(document.getElementById(`cb_mora_tel_${lineaId}`).value),
+                consultas_max_60_dias: parseInt(document.getElementById(`cb_consultas_${lineaId}`).value),
+                dti_maximo: parseFloat(document.getElementById(`cb_dti_${lineaId}`).value),
+                ingreso_minimo: parseFloat(document.getElementById(`cb_ingreso_${lineaId}`).value),
+                antiguedad_laboral_min_meses: parseInt(document.getElementById(`cb_antiguedad_${lineaId}`).value),
+                historial_pagos_min_meses: parseInt(document.getElementById(`cb_historial_${lineaId}`).value)
+            };
+            
+            const response = await fetch(`/api/comite/criterios-borderline/${lineaId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(datos)
+            });
+            
+            const data = await response.json();
+            return data.success ? {ok: true} : {ok: false, error: data.error};
+        }
+
+        // ================================================================
+        // NIVEL 2 - SECCIÓN C: Guardar Alertas Dinámicas (interno)
+        // ================================================================
+        async function guardarAlertasConfigInterno(lineaId) {
+            // Recolectar alertas dinámicas del DOM
+            const container = document.getElementById(`alertas_container_${lineaId}`);
+            if (!container) return {ok: true};
+            
+            const alertas = [];
+            const checks = container.querySelectorAll('.alerta-check');
+            
+            checks.forEach(check => {
+                const criterio = check.dataset.criterio;
+                const item = check.closest('.alerta-item');
+                const tipo = item ? item.dataset.tipo : '';
+                
+                let valor_umbral = null;
+                let operador = '<';
+                let valor_alerta = null;
+                
+                if (tipo === 'composite' || tipo === 'select' || tipo === 'seleccion') {
+                    // Criterio tipo selección: valor_alerta es la opción elegida
+                    const selectEl = item.querySelector('.alerta-valor-select');
+                    if (selectEl) valor_alerta = selectEl.value || null;
+                } else if (tipo === 'number' || tipo === 'numerico' || tipo === 'currency' || tipo === 'percentage') {
+                    // Criterio numérico: operador + valor umbral
+                    const opEl = item.querySelector('.alerta-operador');
+                    const valEl = item.querySelector('.alerta-valor-num');
+                    if (opEl) operador = opEl.value;
+                    if (valEl && valEl.value) valor_umbral = parseFloat(valEl.value);
+                }
+                
+                alertas.push({
+                    criterio_codigo: criterio,
+                    habilitada: check.checked,
+                    valor_umbral: valor_umbral,
+                    operador: operador,
+                    valor_alerta: valor_alerta
+                });
+            });
+            
+            const response = await fetch(`/api/comite/alertas-config/${lineaId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(alertas)
+            });
+            
+            const data = await response.json();
+            return data.success ? {ok: true} : {ok: false, error: data.error};
+        }
+
+        // ================================================================
+        // GUARDAR TODO: Unifica las 3 secciones en una sola operación
+        // ================================================================
+        async function guardarTodoLinea(lineaId) {
+            const btn = document.querySelector(`button[onclick*="guardarTodoLinea(${lineaId})"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+            }
+            
+            let errores = [];
+            
+            try {
+                // 1. Guardar configuración de zonas
+                const r1 = await guardarConfigLineaInterno(lineaId);
+                if (!r1.ok) errores.push('Zonas: ' + r1.error);
+                
+                // 2. Guardar criterios borderline
+                const r2 = await guardarCriteriosBorderlineInterno(lineaId);
+                if (!r2.ok) errores.push('Criterios: ' + r2.error);
+                
+                // 3. Guardar alertas
+                const r3 = await guardarAlertasConfigInterno(lineaId);
+                if (!r3.ok) errores.push('Alertas: ' + r3.error);
+                
+            } catch (error) {
+                console.error('Error guardando configuración:', error);
+                errores.push('Error de conexión: ' + error.message);
+            }
+            
+            // Restaurar botón
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save me-1"></i>Guardar Configuración';
+            }
+            
+            // Mensaje único de resultado
+            if (errores.length === 0) {
+                showToast('Toda la configuración guardada correctamente', 'success');
+                if (btn && btn._resetUnsaved) btn._resetUnsaved();
+            } else {
+                showToast('Errores al guardar: ' + errores.join(' | '), 'danger');
+            }
+        }
+
+        // Formatear campo COP con separadores de miles
+        function formatCOPInput(input) {
+            let val = input.value.replace(/[^0-9]/g, '');
+            if (val) {
+                input.value = parseInt(val).toLocaleString('es-CO');
+            }
+        }
+        
+        // Parsear valor COP (quitar separadores) a número entero
+        function parseCOPValue(val) {
+            if (!val) return 0;
+            return parseInt(String(val).replace(/[^0-9]/g, '')) || 0;
+        }
+
+        // ================================================================
+        // DETECCIÓN DE CAMBIOS NO GUARDADOS
+        // ================================================================
+        (function() {
+            // CSS para animación pulsante
+            const style = document.createElement('style');
+            style.textContent = `
+                .btn-comite-unsaved {
+                    animation: pulse-comite 2s infinite;
+                }
+                @keyframes pulse-comite {
+                    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+                    70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Función genérica para configurar detección en un botón AJAX
+            function setupAjaxBtnDetection(btn) {
+                if (!btn) return;
+                const card = btn.closest('.card') || btn.closest('.card-footer')?.parentElement;
+                if (!card) return;
+
+                const originalHtml = btn.innerHTML;
+                const originalClasses = [...btn.classList];
+                let isDirty = false;
+
+                function markDirty() {
+                    if (isDirty) return;
+                    isDirty = true;
+                    btn.innerHTML = '<i class="bi bi-save me-1"></i>Guardar *';
+                    btn.classList.remove('btn-primary', 'btn-outline-primary');
+                    btn.classList.add('btn-warning', 'btn-comite-unsaved', 'text-dark', 'fw-bold');
+                }
+
+                // Restaurar al guardar exitosamente
+                btn._resetUnsaved = function() {
+                    isDirty = false;
+                    btn.innerHTML = originalHtml;
+                    btn.className = '';
+                    originalClasses.forEach(c => btn.classList.add(c));
+                };
+
+                card.addEventListener('input', markDirty);
+                card.addEventListener('change', markDirty);
+            }
+
+            // Aplicar a todos los botones de guardar en la página
+            document.querySelectorAll('button[onclick*="guardar"]').forEach(setupAjaxBtnDetection);
+
+            // Wrapper para Config Global (mantiene su propio botón)
+            const origGuardarConfigGlobal = window.guardarConfigGlobal;
+            window.guardarConfigGlobal = async function() {
+                await origGuardarConfigGlobal();
+                const btn = document.querySelector('button[onclick*="guardarConfigGlobal"]');
+                if (btn && btn._resetUnsaved) btn._resetUnsaved();
+            };
+        })();
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+</body>
+</html>

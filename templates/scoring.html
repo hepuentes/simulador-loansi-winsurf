@@ -1,0 +1,3703 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Scoring Interno</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0,0,0,0.125);
+            font-weight: bold;
+        }
+
+        .form-label {
+            font-weight: 500;
+        }
+
+        .result-card {
+            transition: all 0.3s ease;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .score-label {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+
+        /* Estilo para el indicador de aprobación */
+        .aprobacion-badge {
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        /* Estilos para las barras de progreso de criterios */
+        .criterio-progress {
+            height: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        /* Tabla de resultados detallados */
+        .detail-table th {
+            font-weight: 600;
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .detail-table td {
+            vertical-align: middle;
+        }
+
+        .peso-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            background-color: #e9ecef;
+        }
+
+        .field-help {
+            background-color: #f8f9fa;
+            border-left: 3px solid #0d6efd;
+            padding: 8px 15px;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            border-radius: 0 5px 5px 0;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative;
+            z-index: 1;
+        }
+
+        .field-help i {
+            color: #0d6efd;
+            font-size: 1rem;
+            vertical-align: middle;
+        }
+
+        label.form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                margin-bottom: 15px;
+            }
+
+            .score-value {
+                font-size: 2.5rem;
+            }
+
+            .score-label {
+                font-size: 1.2rem;
+            }
+
+            .nav-buttons {
+                position: static;
+                margin-bottom: 15px;
+                display: flex;
+                justify-content: flex-end;
+            }
+
+            .header-title {
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+        }
+        /* Mejoras visuales para Scoring */
+        .card {
+            border-radius: 20px;
+            border: none;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+            font-weight: 600;
+        }
+
+        /* ========================================
+           SECCIONES DE CRITERIOS (2025-12-26)
+           ======================================== */
+        .criterios-seccion-form {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            background: var(--bs-body-bg);
+            overflow: hidden;
+        }
+
+        .criterios-seccion-header-form {
+            padding: 12px 16px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .criterios-seccion-header-form h6 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .criterios-seccion-body-form {
+            padding: 1rem;
+        }
+
+        /* Colores de secciones */
+        .seccion-header-purple { background: linear-gradient(135deg, #6f42c1 0%, #8b5cf6 100%); }
+        .seccion-header-blue { background: linear-gradient(135deg, #0d6efd 0%, #3b82f6 100%); }
+        .seccion-header-green { background: linear-gradient(135deg, #198754 0%, #22c55e 100%); }
+        .seccion-header-orange { background: linear-gradient(135deg, #fd7e14 0%, #f97316 100%); }
+        .seccion-header-red { background: linear-gradient(135deg, #dc3545 0%, #ef4444 100%); }
+        .seccion-header-teal { background: linear-gradient(135deg, #20c997 0%, #14b8a6 100%); }
+        .seccion-header-gray { background: linear-gradient(135deg, #6c757d 0%, #71717a 100%); }
+
+        [data-theme="dark"] .criterios-seccion-form {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .field-help {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+            border-left: 4px solid var(--primary);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .result-card {
+            animation: fadeIn 0.5s ease-out, pulse 2s ease-in-out infinite;
+        }
+
+        .score-value {
+            font-weight: 700;
+            background: var(--bg-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .aprobacion-badge {
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .progress {
+            height: 30px;
+            border-radius: 15px;
+            background: var(--bg-secondary);
+            overflow: visible;
+            position: relative;
+        }
+
+        .progress-bar {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .detail-table th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+
+        .detail-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .detail-table tbody tr:hover {
+            background: var(--bg-secondary);
+            transform: translateX(5px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========================================
+           TEXTO AVAL BLANCO (TEMA CLARO)
+           ======================================== */
+
+        /* Forzar blanco en el mensaje de aval sobre fondo verde - TEMA CLARO */
+        .result-card .mt-3.mb-0 .small.text-center.text-muted {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .result-card .mt-3.mb-0 .small.text-center.text-muted i {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        /* Específico para el card de aval dinámico */
+        .result-card .card.border-0.bg-warning .text-muted,
+        .result-card .card.border-0.bg-warning .small {
+            color: white !important;
+        }
+
+        .result-card .card.border-0.bg-warning .text-muted i {
+            color: white !important;
+        }
+
+        /* Mantener normal en tema oscuro */
+        [data-theme="dark"] .result-card .mt-3.mb-0 .small.text-center.text-muted {
+            color: #a0aec0 !important;
+        }
+
+        [data-theme="dark"] .result-card .card.border-0.bg-warning .text-muted {
+            color: #a0aec0 !important;
+        }
+
+        /* ========================================
+           BADGES PORCENTAJE LEGIBLES (TEMA OSCURO)
+           ======================================== */
+
+        /* Badges de peso en desglose detallado - TEXTO NEGRO EN TEMA OSCURO */
+        [data-theme="dark"] .detail-table .peso-badge {
+            background-color: #e9ecef !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+
+        /* También aplicar a badges circulares de peso en listado de criterios */
+        [data-theme="dark"] .badge-peso {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            border: 2px solid #e2e8f0 !important;
+        }
+
+        /* Si hay badges dentro de la tabla de resultados */
+        [data-theme="dark"] .detail-table tbody td .badge,
+        [data-theme="dark"] .detail-table tbody td span.badge {
+            background-color: #e9ecef !important;
+            color: #000000 !important;
+        }
+
+        /* Asegurar que el porcentaje sea visible */
+        [data-theme="dark"] .scoring-criteria-row .badge-peso,
+        [data-theme="dark"] .scoring-result .badge-peso {
+            background-color: #f8f9fa !important;
+            color: #1a202c !important;
+            font-weight: 700 !important;
+        }
+
+        /*  Eliminar scroll horizontal en tabla */
+        .detail-table {
+            overflow-x: hidden !important;
+        }
+
+        .detail-table tfoot td {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Asegurar que la última fila no genere scroll */
+        .detail-table tfoot tr td {
+            padding: 1rem 0.5rem !important;
+        }
+
+        @media (max-width: 576px) {
+            .detail-table tfoot td {
+                font-size: 0.9rem;
+            }
+        }
+
+        /*  Contraste correcto para texto de tasas */
+        .tasas-info-text {
+            color: #4a5568 !important;
+            font-weight: 500;
+        }
+
+        [data-theme="dark"] .tasas-info-text {
+            color: #e2e8f0 !important;
+        }
+        /* Badge "Porcentaje de Aval" legible en tema claro */
+        .text-warning {
+            color: #ffc107 !important;
+        }
+
+        /* Badge en card con fondo que contraste */
+        .card .text-warning.fw-bold {
+            background-color: rgba(255, 193, 7, 0.15);
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        /*  Tabla sin scroll horizontal - ajustar anchos */
+        .detail-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .detail-table th:nth-child(1),
+        .detail-table td:nth-child(1) {
+            width: 40%; /* Criterio - más ancho */
+        }
+
+        .detail-table th:nth-child(2),
+        .detail-table td:nth-child(2) {
+            width: 25%; /* Valor - reducido */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .detail-table th:nth-child(3),
+        .detail-table td:nth-child(3) {
+            width: 18%; /* Puntos */
+        }
+
+        .detail-table th:nth-child(4),
+        .detail-table td:nth-child(4) {
+            width: 17%; /* Contribución */
+        }
+
+        /* Evitar scroll horizontal */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .detail-table th:nth-child(1),
+            .detail-table td:nth-child(1) {
+                width: 35%;
+            }
+
+            .detail-table th:nth-child(2),
+            .detail-table td:nth-child(2) {
+                width: 30%;
+            }
+        }
+
+        /* Badges .peso-badge legibles en AMBOS temas */
+        .peso-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 10px;
+            background-color: #e9ecef;
+            color: #212529;
+            font-weight: 600;
+        }
+
+        /* Tema oscuro: Badge peso legible */
+        [data-theme="dark"] .peso-badge {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Badges de porcentaje en columna VALOR (tema oscuro) */
+        [data-theme="dark"] .detail-table tbody td {
+            color: #e0e0e0;
+        }
+
+        /* Si hay badges dentro de la columna valor */
+        .detail-table tbody td .badge {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #0d6efd;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .detail-table tbody td .badge {
+            background-color: rgba(93, 156, 236, 0.25);
+            color: #93c5fd;
+        }
+
+        /*  Card de resultado de scoring (fondo y contraste) */
+        [data-theme="dark"] .result-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Text-warning en tema oscuro */
+        [data-theme="dark"] .text-warning {
+            color: #ffc107 !important;
+        }
+
+        [data-theme="dark"] .card .text-warning.fw-bold {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107 !important;
+        }
+
+        /* Mejorar contraste de texto en cards tema oscuro */
+        [data-theme="dark"] .small.text-muted {
+            color: #9ca3af !important;
+        }
+
+        [data-theme="dark"] .card-body .fw-bold {
+            color: #f0f0f0;
+        }
+
+        /* ================================================================== */
+        /* ARREGLOS ADICIONALES PARA PROBLEMAS VISUALES ESPECÍFICOS          */
+        /* ================================================================== */
+
+        /* Badge Porcentaje de Aval - Forzar contraste en tema claro */
+        .card .small.text-muted {
+            color: #6c757d !important;
+            font-weight: 500;
+        }
+
+        .card .fw-bold.text-warning {
+            background-color: rgba(255, 193, 7, 0.2) !important;
+            color: #d39e00 !important;
+            padding: 6px 14px !important;
+            border-radius: 8px !important;
+            display: inline-block !important;
+            font-size: 1.1em !important;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        /* Badge "Porcentaje de Aval" específico - usar selector más específico */
+        div[class*="text-center"] .fw-bold.text-warning {
+            background-color: #fff3cd !important;
+            color: #856404 !important;
+            padding: 8px 16px !important;
+            border: 2px solid #ffc107 !important;
+        }
+
+        [data-theme="dark"] div[class*="text-center"] .fw-bold.text-warning {
+            background-color: rgba(255, 193, 7, 0.25) !important;
+            color: #ffc107 !important;
+            border: 2px solid rgba(255, 193, 7, 0.5) !important;
+        }
+
+        /* Badges en columna VALOR de tabla - peso-badge */
+        .detail-table .peso-badge {
+            background-color: #e3f2fd !important;
+            color: #1565c0 !important;
+            border: 1px solid #90caf9 !important;
+            font-weight: 600 !important;
+            padding: 4px 10px !important;
+        }
+
+        [data-theme="dark"] .detail-table .peso-badge {
+            background-color: rgba(33, 150, 243, 0.2) !important;
+            color: #90caf9 !important;
+            border: 1px solid rgba(144, 202, 249, 0.3) !important;
+        }
+
+        /*  Todos los badges dentro de la tabla */
+        .detail-table tbody td span[class*="badge"],
+        .detail-table tbody td .badge,
+        .detail-table tbody td span.peso-badge {
+            min-width: 45px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Asegurar que valores numéricos en tabla se vean bien */
+        .detail-table tbody td {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /*  Evitar texto blanco sobre fondo blanco en badges DE SCORING */
+        /* IMPORTANTE: Solo aplicar a badges DENTRO del contenedor de scoring, no al navbar */
+        .container .peso-badge,
+        .container .detail-table .badge,
+        .container .scoring-result .badge {
+            background-color: #e9ecef !important;
+            color: #212529 !important;
+            font-weight: 600 !important;
+        }
+
+        [data-theme="dark"] .container .peso-badge,
+        [data-theme="dark"] .container .detail-table .badge,
+        [data-theme="dark"] .container .scoring-result .badge {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+        }
+
+        /* Badges de Bootstrap mantienen sus colores originales */
+        .badge.bg-success { background-color: #198754 !important; color: white !important; }
+        .badge.bg-danger { background-color: #dc3545 !important; color: white !important; }
+        .badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .badge.bg-info { background-color: #0dcaf0 !important; color: #000 !important; }
+        .badge.bg-primary { background-color: #0d6efd !important; color: white !important; }
+
+    </style>
+
+    <script>
+        /* ========================================
+           PROTECCIÓN DE SEGURIDAD SUAVIZADA
+           ======================================== */
+        // Advertencia de seguridad sin bloquear funcionalidad
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.console && window.console.log) {
+                console.log('%c⚠️ ADVERTENCIA DE SEGURIDAD', 'color: red; font-size: 20px; font-weight: bold;');
+                console.log('%cEsta es una herramienta de desarrollador. No pegues código aquí a menos que sepas exactamente lo que hace.', 'color: red; font-size: 14px;');
+            }
+        });
+
+        // Función para NORMALIZACIÓN ROBUSTA DE NÚMEROS MONETARIOS, Evita: contaminar campos de texto
+       function formatCurrencyInput(input) {
+    // Solo aplicar si es campo currency
+    if (!input.dataset.tipo || input.dataset.tipo !== 'currency') {
+        return;
+    }
+
+    // Guardar posición del cursor
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const oldLength = input.value.length;
+
+    // Limpiar TODO excepto dígitos
+    let value = input.value.replace(/[^\d]/g, '');
+
+    // Eliminar ceros a la izquierda
+    value = value.replace(/^0+/, '');
+
+    // Si hay valor, formatear con puntos cada 1000
+    if (value) {
+        input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    } else {
+        input.value = '';
+    }
+
+    // Calcular el cambio en longitud para ajustar cursor
+    const newLength = input.value.length;
+    const diff = newLength - oldLength;
+
+    // Restaurar posición del cursor
+    if (input.value.length > 0) {
+        input.selectionStart = Math.max(0, start + diff);
+        input.selectionEnd = Math.max(0, end + diff);
+    }
+}
+
+/**
+ *  PARSEAR NÚMEROS ANTES DE ENVIAR
+ * Uso: parseMoneyValue("1.000.000") => 1000000
+ */
+function parseMoneyValue(value) {
+    if (!value || value.trim() === '') return 0;
+
+    // Eliminar TODOS los separadores de miles (puntos, comas)
+    const cleaned = value.toString().replace(/[\.,\s]/g, '');
+
+    // Convertir a número
+    const parsed = parseInt(cleaned, 10);
+
+    return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ *  VALIDAR Y NORMALIZAR ANTES DE SUBMIT
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('scoringForm');
+
+    // ========================================
+    // IMPORTAR DATOS DESDE CAPACIDAD DE PAGO
+    // ========================================
+    function importarDatosDesdeURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Verificar si viene desde capacidad de pago
+        const source = urlParams.get('source');
+        if (source !== 'capacidad_pago') {
+            return; // No hacer nada si no viene de capacidad de pago
+        }
+
+        // Obtener parámetros
+        const ingresosVerificables = urlParams.get('criterio_1753279804789');
+        const ingresosNetos = urlParams.get('ingresos_netos');
+        const relacionDeuda = urlParams.get('relacion_deuda');
+        const mensaje = urlParams.get('mensaje');
+        const datosImportados = urlParams.get('datos_importados');
+
+        console.log('📥 Importando datos desde Capacidad de Pago...');
+        console.log('Ingresos Verificables:', ingresosVerificables);
+        console.log('Ingresos Netos:', ingresosNetos);
+        console.log('Relación Deuda:', relacionDeuda);
+
+        // Rellenar campos si existen
+        let camposRellenados = 0;
+
+        if (ingresosVerificables) {
+            const campoVerificables = document.getElementById('criterio_1753279804789');
+            if (campoVerificables) {
+                // Formatear con puntos de miles
+                const valorFormateado = parseFloat(ingresosVerificables).toLocaleString('es-CO');
+                campoVerificables.value = valorFormateado;
+                camposRellenados++;
+                console.log('✅ Campo "Ingresos Mensuales Verificables" rellenado:', valorFormateado);
+            } else {
+                console.warn('⚠️ Campo "criterio_1753279804789" no encontrado en el formulario');
+            }
+        }
+
+        if (ingresosNetos) {
+            const campoNetos = document.getElementById('ingresos_netos');
+            if (campoNetos) {
+                // Formatear con puntos de miles
+                const valorFormateado = parseFloat(ingresosNetos).toLocaleString('es-CO');
+                campoNetos.value = valorFormateado;
+                camposRellenados++;
+                console.log('✅ Campo "Ingresos Estimado" rellenado:', valorFormateado);
+            } else {
+                console.warn('⚠️ Campo "ingresos_netos" no encontrado en el formulario');
+            }
+        }
+
+        if (relacionDeuda) {
+            const campoRelacion = document.getElementById('relacion_deuda');
+            if (campoRelacion) {
+                campoRelacion.value = relacionDeuda;
+                camposRellenados++;
+                console.log('✅ Campo "Relación Deuda" rellenado:', relacionDeuda);
+            } else {
+                console.warn('⚠️ Campo "relacion_deuda" no encontrado en el formulario');
+            }
+        }
+
+        // Mostrar mensaje de importación si hay datos
+        if (mensaje && camposRellenados > 0) {
+            mostrarMensajeImportacion(mensaje, camposRellenados);
+        }
+    }
+
+    // Función para mostrar mensaje de importación
+    function mostrarMensajeImportacion(mensaje, cantidadCampos) {
+        // Buscar el formulario
+        const formulario = document.getElementById('scoringForm');
+        if (!formulario) return;
+
+        // Crear alerta de importación
+        const alerta = document.createElement('div');
+        alerta.className = 'alert alert-success alert-dismissible fade show mb-4';
+        alerta.setAttribute('role', 'alert');
+        alerta.innerHTML = `
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>Datos importados exitosamente</strong>
+            <p class="mb-0 mt-2">${mensaje}</p>
+            <small class="d-block mt-1">${cantidadCampos} campo(s) rellenado(s) automáticamente. Revise y complete los campos restantes.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        // Insertar antes del formulario
+        formulario.parentNode.insertBefore(alerta, formulario);
+
+        // Auto-ocultar después de 10 segundos
+        setTimeout(() => {
+            alerta.classList.remove('show');
+            setTimeout(() => alerta.remove(), 150);
+        }, 10000);
+
+        console.log('✅ Mensaje de importación mostrado');
+    }
+
+    // Ejecutar importación al cargar la página
+    importarDatosDesdeURL();
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Normalizar todos los campos currency antes de enviar
+            const currencyInputs = form.querySelectorAll('input[data-tipo="currency"]');
+
+            currencyInputs.forEach(function(input) {
+                // Crear campo oculto con valor parseado
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = input.name + '_normalized';
+                hiddenInput.value = parseMoneyValue(input.value);
+                form.appendChild(hiddenInput);
+            });
+        });
+    }
+});
+    </script>
+    <!-- Protección de seguridad: Bloquear click derecho en contenido -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mensaje de advertencia en consola
+            const consoleMessages = [
+                'ADVERTENCIA: Esta es una función de desarrollador. Si alguien te pidió que copies/pegues algo aquí para habilitar una función o "hackear" una cuenta, es un intento de fraude.',
+                'SEGURIDAD: No deberías estar aquí a menos que sepas lo que estás haciendo.',
+            ];
+            console.log('%c¡DETENTE!', 'color: red; font-size: 30px; font-weight: bold;');
+            console.log('%c' + consoleMessages[0], 'color: red; font-size: 14px;');
+            console.log('%c' + consoleMessages[1], 'color: red; font-size: 14px;');
+
+            // Bloquear click derecho EXCEPTO en enlaces del menú
+            document.addEventListener('contextmenu', function(e) {
+                // Permitir click derecho en enlaces (para abrir en nueva pestaña)
+                if (e.target.tagName === 'A' || e.target.closest('a')) {
+                    return true; // Permitir menú contextual en enlaces
+                }
+
+                // Bloquear click derecho en el resto del contenido (seguridad)
+                e.preventDefault();
+                return false;
+            });
+        });
+        // ============================================
+        // DETECTAR SESIÓN EXPIRADA
+        // ============================================
+
+        // Interceptar todos los fetch para detectar sesión expirada
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            return originalFetch.apply(this, args)
+                .then(response => {
+                    // Si es 401 (no autorizado) o 403 (prohibido), redirigir a login
+                    if (response.status === 401 || response.status === 403) {
+                        console.warn('⚠️ Sesión expirada detectada');
+                        alert('Tu sesión ha expirado. Serás redirigido al login.');
+                        window.location.href = '/login';
+                        return Promise.reject(new Error('Sesión expirada'));
+                    }
+                    return response;
+                })
+                .catch(error => {
+                    console.error('Error en fetch:', error);
+                    throw error;
+                });
+        };
+
+        // Detectar error de caché (ERR_CACHE_MISS)
+        window.addEventListener('pageshow', function(event) {
+            // Si la página viene del caché del navegador (back/forward)
+            if (event.persisted) {
+                console.log('📄 Página cargada desde caché');
+                // Verificar si la sesión sigue activa
+                fetch('/api/capacidad-config', {
+                    method: 'GET',
+                    cache: 'no-cache'
+                }).catch(error => {
+                    console.warn('⚠️ Sesión no válida, recargando...');
+                    window.location.reload();
+                });
+            }
+        });
+
+        // Prevenir envío de formularios si la sesión expiró
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Verificar si hay token CSRF válido
+                    const csrfToken = document.querySelector('input[name="csrf_token"]');
+                    if (!csrfToken || !csrfToken.value) {
+                        e.preventDefault();
+                        alert('Tu sesión ha expirado. Serás redirigido al login.');
+                        window.location.href = '/login';
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
+<style>
+    .border-dashed { border-style: dashed !important; }
+    .dropzone-area { transition: all 0.2s ease; cursor: pointer; min-height: 180px; display: flex; flex-direction: column; justify-content: center; }
+    .dropzone-area:hover { border-color: #667eea !important; background-color: rgba(102, 126, 234, 0.05); }
+    #cardDocumentos .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+
+    /* =====================================================
+       UPLOAD CARDS — rediseño lista compacta
+       ===================================================== */
+    .upload-drop-zone { border: 1px dashed #dee2e6; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s; background: transparent; }
+    .upload-drop-zone:hover { background: rgba(0,0,0,0.02); }
+    .upload-drop-zone .dz-icon { width: 26px; height: 26px; border-radius: 6px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #6c757d; }
+    .upload-drop-zone .dz-text { font-size: 12px; color: #adb5bd; flex: 1; }
+    .upload-drop-zone .dz-text strong { color: #6c757d; font-weight: 500; }
+    .file-list-compact { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+    .file-row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; background: #f8f9fa; border: 0.5px solid #e9ecef; min-width: 0; }
+    .file-row .fi-icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; font-weight: 600; }
+    .file-row .fi-icon.pdf { background: #FAECE7; color: #993C1D; }
+    .file-row .fi-icon.img { background: #E1F5EE; color: #085041; }
+    .file-row .fi-name { flex: 1; font-size: 11px; font-weight: 500; color: #343a40; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .file-row .fi-meta { font-size: 10px; color: #adb5bd; flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+    .file-row .fi-meta .fi-ok { color: #1D9E75; font-size: 12px; }
+    .file-row .fi-remove { width: 16px; height: 16px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #adb5bd; flex-shrink: 0; padding: 0; font-size: 14px; line-height: 1; border-radius: 50%; }
+    .file-row .fi-remove:hover { color: #f5603a; background: #FAECE7; }
+    .btn-add-more { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #adb5bd; background: none; border: none; cursor: pointer; padding: 2px 0; margin-top: 2px; }
+    .btn-add-more:hover { color: #6c757d; }
+    .btn-add-more::before { content: '+'; font-size: 13px; font-weight: 500; }
+    .doc-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+    .doc-card-title { font-size: 11px; font-weight: 600; color: #495057; text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
+    .doc-card-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+    .doc-card-badge.recomendado { background: #E1F5EE; color: #085041; }
+    .doc-card-badge.opcional { background: #f8f9fa; color: #6c757d; }
+    .dropzone-area { transition: all 0.2s ease; cursor: pointer; }
+
+    /* =====================================================
+       BOTÓN ANALIZAR IA — estados animados
+       ===================================================== */
+    #btn-analizar-ia { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 44px; padding: 0 24px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; overflow: hidden; transition: background 0.3s, transform 0.1s; background: #1a2744; color: #c8f135; min-width: 250px; }
+    #btn-analizar-ia:active { transform: scale(0.98); }
+    #btn-analizar-ia:disabled { cursor: not-allowed; }
+    #btn-analizar-ia .ia-track { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(200,241,53,0.12); }
+    #btn-analizar-ia .ia-progress { height: 100%; background: #c8f135; width: 0%; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
+    #btn-analizar-ia .ia-static { display: flex; align-items: center; gap: 9px; }
+    #btn-analizar-ia.ia-loading .ia-static, #btn-analizar-ia.ia-success .ia-static { display: none; }
+    #btn-analizar-ia .ia-anim { display: none; align-items: center; gap: 8px; }
+    #btn-analizar-ia.ia-loading .ia-anim { display: flex; }
+    #btn-analizar-ia .ia-dots { display: flex; gap: 3px; align-items: center; }
+    #btn-analizar-ia .ia-dots span { display: block; width: 4px; height: 4px; border-radius: 50%; background: #c8f135; animation: ia-dot-pulse 1.2s ease-in-out infinite; }
+    #btn-analizar-ia .ia-dots span:nth-child(2) { animation-delay: 0.2s; }
+    #btn-analizar-ia .ia-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes ia-dot-pulse { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.75); } 40% { opacity: 1; transform: scale(1.1); } }
+    #btn-analizar-ia .ia-step-text { font-size: 13px; font-weight: 500; color: #c8f135; min-width: 190px; text-align: left; }
+    #btn-analizar-ia.ia-success { background: #0F6E56; color: #E1F5EE; cursor: default; }
+    #btn-analizar-ia .ia-done { display: none; align-items: center; gap: 8px; }
+    #btn-analizar-ia.ia-success .ia-done { display: flex; }
+    #btn-analizar-ia.ia-success .ia-progress { width: 100% !important; background: #1D9E75; }
+    .ia-check-circle { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ia-check-circle svg { width: 11px; height: 11px; }
+    .ia-done-text { font-size: 13px; font-weight: 500; color: #9FE1CB; }
+    </style>
+    </head>
+<body>
+    <!-- Navegación unificada desde partial -->
+    {% include 'partials/navbar_asesor.html' %}
+
+    <div class="container py-4 position-relative">
+
+        <!-- Card de carga de documentos para extraccion automatica (ancho completo) -->
+        <div class="card mb-4" id="cardDocumentos" style="display:none">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+              <i class="bi bi-file-earmark-arrow-up me-2"></i>
+              Documentos para analisis automatico
+            </span>
+            <span class="badge bg-secondary" id="badgeDocsPendientes">
+              Cargando...
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-person-vcard me-1"></i>
+                  Cedula del solicitante
+                </label>
+                <input type="text" class="form-control"
+                       id="cedula_extraccion"
+                       placeholder="Ej: 1094883403"
+                       oninput="sincronizarCedula(this.value)">
+                <small class="text-muted">Se usa para desbloquear PDFs protegidos</small>
+              </div>
+              <div class="col-md-8">
+                <div class="alert alert-light border mb-0 py-2">
+                  <i class="bi bi-info-circle me-1 text-primary"></i>
+                  <small>Sube los documentos requeridos y presiona <strong>Analizar</strong>. La IA extraera los datos y pre-llenara el formulario.</small>
+                </div>
+              </div>
+            </div>
+            <!-- Zona de documentos (se genera dinamicamente) -->
+            <div id="zonaDocumentos">
+              <div class="text-center text-muted py-3">
+                <i class="bi bi-arrow-up-circle fs-4"></i><br>
+                <small>Selecciona una linea de credito para ver los documentos requeridos</small>
+              </div>
+            </div>
+            <!-- Boton analizar -->
+            <div class="mt-3 d-flex align-items-center gap-3" id="contenedorBtnAnalizar" style="display:none">
+              <button type="button" id="btn-analizar-ia" onclick="analizarDocumentos()">
+                <div class="ia-track"><div class="ia-progress"></div></div>
+                <div class="ia-static">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>
+                  </svg>
+                  Analizar documentos con IA
+                </div>
+                <div class="ia-anim">
+                  <div class="ia-dots"><span></span><span></span><span></span></div>
+                  <span class="ia-step-text">Iniciando análisis...</span>
+                </div>
+                <div class="ia-done">
+                  <div class="ia-check-circle">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg>
+                  </div>
+                  <span class="ia-done-text">43 campos pre-llenados</span>
+                </div>
+              </button>
+              <small class="text-muted" id="textoEstadoExtraccion"></small>
+            </div>
+            <!-- Resultados de extraccion -->
+            <div id="resultadoExtraccion" style="display:none" class="mt-3">
+              <div class="alert alert-success mb-0">
+                <i class="bi bi-check-circle me-2"></i>
+                <strong>Extraccion completada.</strong>
+                Los campos del formulario han sido pre-llenados.
+                Revisa y corrige si es necesario antes de calcular.
+                <button type="button" class="btn btn-sm btn-outline-success ms-3"
+                        onclick="verDetalleExtraccion()">
+                  Ver detalle
+                </button>
+              </div>
+            </div>
+            <!-- Alerta de fraude en metadatos de PDF -->
+            <div id="alertaFraudeMetadatos" style="display:none" class="mt-3"></div>
+            <!-- Alerta PDF con contrasena -->
+            <div id="alertaPasswordPdf" style="display:none" class="mt-3">
+              <div class="alert alert-warning mb-0">
+                <i class="bi bi-lock me-2"></i>
+                <strong>PDF protegido.</strong> No se pudo abrir con la cedula.
+                <div class="mt-2 d-flex gap-2">
+                  <input type="text" class="form-control form-control-sm w-auto"
+                         id="passwordManualPdf"
+                         placeholder="Contrasena manual">
+                  <input type="hidden" id="fuentePdfBloqueada">
+                  <button type="button" class="btn btn-sm btn-warning"
+                          onclick="reintentarConPassword()">
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-clipboard-data me-2"></i>Datos del Reporte DataCrédito
+                    </div>
+                    <div class="card-body">
+                        <!-- LÍNEA DE CRÉDITO - Selector al inicio para cargar criterios correctos -->
+                        <div class="mb-4">
+                            <label for="linea_credito" class="form-label fw-bold">
+                                <i class="bi bi-credit-card-2-front me-1"></i> Línea de Crédito a Evaluar
+                            </label>
+                            <select class="form-select" id="linea_credito" name="linea_credito" required onchange="cargarCriteriosLinea(this.value)" form="scoringForm">
+                                {% if lineas_scoring %}
+                                    {% for linea in lineas_scoring %}
+                                    <option value="{{ linea.nombre }}" data-linea-id="{{ linea.id }}" {% if linea.id == linea_default_id %}selected{% endif %}>
+                                        {{ linea.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for tipo_credito in lineas_credito %}
+                                    <option value="{{ tipo_credito }}">{{ tipo_credito }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <div class="field-help">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Seleccione primero la línea de crédito. Los criterios se cargarán según la configuración de cada línea.
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Nota:</strong> Complete estos campos con la información que aparece en el reporte DataCrédito del cliente.
+                        </div>
+
+                        <form id="scoringForm" method="post" action="/scoring">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                            <!-- Campo oculto para persistir identificación tras calcular -->
+                            <input type="hidden"
+                                   id="nombre_cliente_hidden"
+                                   name="nombre_cliente_persist"
+                                   value="{{ form_values.get('nombre_cliente', '') if form_values else '' }}">
+
+                           <!-- Identificación del cliente Con labels descriptivos -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person-badge"></i> Identificación del Cliente
+                                </label>
+
+                                <!-- Nombre completo -->
+                                <div class="mb-3">
+                                    <label for="nombre_cliente_nombre" class="form-label">
+                                        Nombre Completo
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="nombre_cliente_nombre"
+                                           name="nombre_cliente_nombre"
+                                           placeholder="Ej: Carlos Andrés López"
+                                           maxlength="100"
+                                           required
+                                           value="{{ form_values.get('nombre_cliente_nombre', '') if form_values else '' }}">
+                                </div>
+
+                                <!-- Número de cédula -->
+                                <div class="mb-3">
+                                    <label for="nombre_cliente_cedula" class="form-label">
+                                        Número de Cédula o ID
+                                    </label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="nombre_cliente_cedula"
+                                           name="nombre_cliente_cedula"
+                                           placeholder="Ej: 123456789"
+                                           pattern="[0-9]+"
+                                           title="Solo números"
+                                           maxlength="15"
+                                           required
+                                           value="{{ form_values.get('nombre_cliente_cedula', '') if form_values else '' }}">
+                                </div>
+
+                                <!-- Fecha de nacimiento -->
+                                <div class="mb-3">
+                                    <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                                    <input type="date"
+                                           class="form-control"
+                                           id="fecha_nacimiento"
+                                           name="fecha_nacimiento"
+                                           min="1941-01-01"
+                                           max="2008-12-31"
+                                           required
+                                           value="{{ form_values.get('fecha_nacimiento', '') if form_values else '' }}">
+                                    <div class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Debe tener entre 18 y 84 años para solicitar el crédito.
+                                    </div>
+                                </div>
+
+                                <!-- Edad del solicitante (calculada automáticamente) -->
+                                <div class="mb-3">
+                                    <label for="edad_solicitante" class="form-label">Edad del Solicitante</label>
+                                    <input type="number"
+                                           class="form-control"
+                                           id="edad_solicitante"
+                                           name="edad_solicitante"
+                                           placeholder="Se calcula automáticamente"
+                                           min="18"
+                                           max="99"
+                                           readonly
+                                           value="{{ form_values.get('edad_solicitante', '') if form_values else '' }}">
+                                    <div class="form-text text-muted">
+                                        <i class="bi bi-calculator"></i> Calculado automáticamente a partir de la fecha de nacimiento.
+                                    </div>
+                                </div>
+
+                                <!-- Sexo según cédula -->
+                                <div class="mb-3">
+                                    <label for="genero_solicitante" class="form-label">
+                                        <i class="bi bi-gender-ambiguous me-1"></i> Sexo (Cédula)
+                                    </label>
+                                    <select class="form-select"
+                                            id="genero_solicitante"
+                                            name="genero_solicitante"
+                                            required>
+                                        <option value="" {% if not form_values or not form_values.get('genero_solicitante') %}selected{% endif %}>-- Seleccione --</option>
+                                        <option value="F" {% if form_values and form_values.get('genero_solicitante') == 'F' %}selected{% endif %}>Femenino</option>
+                                        <option value="M" {% if form_values and form_values.get('genero_solicitante') == 'M' %}selected{% endif %}>Masculino</option>
+                                        <option value="NB" {% if form_values and form_values.get('genero_solicitante') == 'NB' %}selected{% endif %}>No Binario</option>
+                                        <option value="T" {% if form_values and form_values.get('genero_solicitante') == 'T' %}selected{% endif %}>Trans</option>
+                                    </select>
+                                    <div class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Campo SEXO de la cédula de ciudadanía. Se pre-llena automáticamente al extraer la cédula con IA.
+                                    </div>
+                                </div>
+
+                                <!-- Ingreso declarado por el solicitante -->
+                                <div class="mb-3">
+                                    <label for="ingreso_declarado" class="form-label">
+                                        <i class="bi bi-cash-coin me-1"></i> Ingreso Mensual Declarado por el Solicitante
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="text"
+                                               class="form-control currency-input"
+                                               id="ingreso_declarado"
+                                               name="ingreso_declarado"
+                                               placeholder="Ej: 1.700.000"
+                                               oninput="formatCurrencyInput(this)"
+                                               maxlength="20"
+                                               value="{{ form_values.get('ingreso_declarado', '') if form_values else '' }}">
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Lo que el solicitante dice ganar. Se usa como referencia para triangulación de ingresos.
+                                    </div>
+                                </div>
+
+                                <!-- Ingreso Verificado (COP) -->
+                                <div class="mb-3">
+                                    <label for="ingreso_verificado" class="form-label">
+                                        <i class="bi bi-patch-check me-1"></i> Ingreso Verificado (COP)
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="text"
+                                               class="form-control currency-input"
+                                               id="ingreso_verificado"
+                                               name="ingreso_verificado"
+                                               placeholder="Ej: 1.423.500"
+                                               oninput="formatCurrencyInput(this)"
+                                               maxlength="20"
+                                               value="{{ form_values.get('ingreso_verificado', '') if form_values else '' }}">
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Ingreso de la fuente más confiable (PILA &gt; Nómina &gt; Certificación). La IA puede pre-llenarlo.
+                                    </div>
+                                </div>
+
+                                <!-- Fuente de Verificación -->
+                                <div class="mb-3">
+                                    <label for="fuente_verificacion" class="form-label">
+                                        <i class="bi bi-clipboard-check me-1"></i> Fuente de Verificación
+                                    </label>
+                                    <select class="form-select"
+                                            id="fuente_verificacion"
+                                            name="fuente_verificacion">
+                                        <option value="No verificable" {% if form_values and form_values.get('fuente_verificacion') == 'No verificable' %}selected{% endif %}>No verificable</option>
+                                        <option value="PILA" {% if form_values and form_values.get('fuente_verificacion') == 'PILA' %}selected{% endif %}>PILA</option>
+                                        <option value="Nómina" {% if form_values and form_values.get('fuente_verificacion') == 'Nómina' %}selected{% endif %}>Nómina</option>
+                                        <option value="Certificación laboral" {% if form_values and form_values.get('fuente_verificacion') == 'Certificación laboral' %}selected{% endif %}>Certificación laboral</option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Documento del cual se tomó el ingreso verificado.
+                                    </div>
+                                </div>
+
+                                <!-- Monto solicitado -->
+                                <div class="mb-3">
+                                    <label for="monto_solicitado" class="form-label">
+                                        Monto Solicitado
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="text"
+                                               class="form-control currency-input"
+                                               id="monto_solicitado"
+                                               name="monto_solicitado"
+                                               placeholder="Ej: 4.500.000"
+                                               oninput="formatCurrencyInput(this)"
+                                               maxlength="20"
+                                               required
+                                               value="{{ form_values.get('monto_solicitado', '') if form_values else '' }}">
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Monto que el cliente desea solicitar
+                                    </div>
+                                </div>
+
+                                <!-- Score psicométrico (WhatsApp/ManyChat) -->
+                                <div class="mb-3">
+                                    <label for="score_psicometrico" class="form-label">
+                                        <i class="bi bi-chat-dots me-1"></i> Score Psicometrico (WhatsApp)
+                                    </label>
+                                    <input type="number"
+                                           class="form-control"
+                                           id="score_psicometrico"
+                                           name="score_psicometrico"
+                                           placeholder="Ingresar puntaje del cuestionario (-10 a 22)"
+                                           min="-10"
+                                           max="22"
+                                           value="{{ form_values.get('score_psicometrico', '0') if form_values else '0' }}">
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> Puntaje del cuestionario de ManyChat. Dejar en 0 si no se realizo.
+                                    </div>
+                                </div>
+
+                                <!-- Panel de evaluación psicométrica -->
+                                <div class="card border-info mb-3" id="panelPsicometrico" style="display:none;">
+                                    <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-clipboard2-pulse me-2"></i><strong>Evaluación Psicométrica</strong></span>
+                                        <span class="badge bg-secondary" id="psico_estado_badge">-</span>
+                                    </div>
+                                    <div class="card-body" id="psico_body">
+                                        <div class="text-center text-muted py-3" id="psico_loading">
+                                            <i class="bi bi-hourglass-split me-1"></i> Buscando test psicométrico...
+                                        </div>
+                                        <div id="psico_resultado" style="display:none;">
+                                            <div class="row text-center mb-2">
+                                                <div class="col">
+                                                    <div class="fs-2 fw-bold" id="psico_score">-</div>
+                                                    <small class="text-muted">Score total</small>
+                                                </div>
+                                                <div class="col"><small class="fw-semibold">A</small><br><span id="psico_a">-</span></div>
+                                                <div class="col"><small class="fw-semibold">B</small><br><span id="psico_b">-</span></div>
+                                                <div class="col"><small class="fw-semibold">C</small><br><span id="psico_c">-</span></div>
+                                                <div class="col"><small class="fw-semibold">D</small><br><span id="psico_d">-</span></div>
+                                                <div class="col"><small class="fw-semibold">E</small><br><span id="psico_e">-</span></div>
+                                            </div>
+                                            <div id="psico_flags"></div>
+                                            <div class="text-end mt-2">
+                                                <a href="#" id="psico_detalle_link" target="_blank" class="btn btn-sm btn-outline-info">
+                                                    <i class="bi bi-eye me-1"></i>Ver detalle
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div id="psico_no_test" style="display:none;">
+                                            <p class="text-muted mb-2">No se encontró test psicométrico para esta cédula.</p>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="generarLinkPsicometrico()">
+                                                <i class="bi bi-link-45deg me-1"></i>Generar link de test
+                                            </button>
+                                            <div id="psico_link_generado" class="mt-2" style="display:none;">
+                                                <input type="text" class="form-control form-control-sm" id="psico_link_input" readonly>
+                                                <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="navigator.clipboard.writeText(document.getElementById('psico_link_input').value).then(()=>alert('Link copiado'))">
+                                                    <i class="bi bi-clipboard me-1"></i>Copiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Campo oculto para compatibilidad con backend actual -->
+                                <input type="hidden"
+                                       id="nombre_cliente"
+                                       name="nombre_cliente"
+                                       value="">
+
+                                <div class="form-text text-muted">
+                                    <i class="bi bi-shield-check"></i> Estos datos se guardan para fines de auditoría interna
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Formulario generado dinámicamente según los criterios configurados -->
+                            <!-- AGRUPADO POR SECCIONES - Contenedor para actualización dinámica -->
+                            <div id="criterios-container">
+                            {% if scoring_criterios_agrupados and scoring_criterios_agrupados|length > 0 %}
+                                {% for grupo in scoring_criterios_agrupados %}
+                                    {% set seccion = grupo.seccion %}
+                                    <div class="criterios-seccion-form mb-4">
+                                        <div class="criterios-seccion-header-form" style="background-color: {{ seccion.color_hex|default('#6c757d') }}; color: white;">
+                                            <i class="bi {{ seccion.icono|default('bi-folder') }}"></i>
+                                            <h6>{{ seccion.nombre }}</h6>
+                                        </div>
+                                        <div class="criterios-seccion-body-form">
+                                            {% for criterio in grupo.criterios %}
+                                                {% set criterio_id = criterio.id %}
+
+                                                <div class="mb-4">
+                                                    <label for="{{ criterio_id }}" class="form-label">
+                                                        {% if criterio.nombre %}
+                                                            {{ criterio.nombre }}
+                                                        {% else %}
+                                                            {{ criterio_id }}
+                                                        {% endif %}
+                                                    </label>
+
+                                                    {% set tipo_campo = criterio.tipo_campo if criterio.tipo_campo else 'number' %}
+                                                    {% set placeholder = criterio.placeholder if criterio.placeholder else 'Ingrese valor' %}
+                                                    {% set ayuda = criterio.ayuda if criterio.ayuda else 'Ingrese el valor para este criterio según la documentación disponible' %}
+
+                                                    {% if tipo_campo == 'currency' %}
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">$</span>
+                                                        <input type="text"
+                                                               class="form-control currency-input"
+                                                               id="{{ criterio_id }}"
+                                                               name="{{ criterio_id }}"
+                                                               placeholder="{{ placeholder }}"
+                                                               oninput="formatCurrencyInput(this)"
+                                                               data-tipo="currency"
+                                                               value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                                               required>
+                                                    </div>
+
+                                                    {% elif tipo_campo == 'percentage' %}
+                                                    <div class="input-group">
+                                                        <input type="number"
+                                                               class="form-control"
+                                                               id="{{ criterio_id }}"
+                                                               name="{{ criterio_id }}"
+                                                               placeholder="{{ placeholder }}"
+                                                               min="0"
+                                                               max="300"
+                                                               step="any"
+                                                               data-tipo="percentage"
+                                                               value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                                               required>
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+
+                                                    {% elif tipo_campo == 'select' %}
+                                                    <select class="form-select"
+                                                            id="{{ criterio_id }}"
+                                                            name="{{ criterio_id }}"
+                                                            data-tipo="select"
+                                                            required>
+                                                        <option value="">-- Seleccione --</option>
+                                                        {% if criterio.opciones %}
+                                                            {% for opcion in criterio.opciones %}
+                                                            <option value="{{ opcion.valor }}"
+                                                                {% if form_values and criterio_id in form_values %}
+                                                                    {% if form_values[criterio_id]|string == opcion.valor|string %}selected{% endif %}
+                                                                {% endif %}>
+                                                                {{ opcion.texto }}
+                                                            </option>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </select>
+
+                                                    {% elif tipo_campo == 'text' %}
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="{{ criterio_id }}"
+                                                           name="{{ criterio_id }}"
+                                                           placeholder="{{ placeholder }}"
+                                                           data-tipo="text"
+                                                           value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                                           required>
+
+                                                    {% else %}
+                                                    <input type="number"
+                                                           class="form-control"
+                                                           id="{{ criterio_id }}"
+                                                           name="{{ criterio_id }}"
+                                                           placeholder="{{ placeholder }}"
+                                                           min="0"
+                                                           max="999999999"
+                                                           step="any"
+                                                           data-tipo="number"
+                                                           value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                                           required>
+                                                    {% endif %}
+
+                                                    <div class="field-help">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        {{ ayuda }}
+                                                    </div>
+                                                </div>
+
+                                                <!-- CAMPO CONDICIONAL: Monto Mora Telcos -->
+                                                {% if criterio_id == 'comportamiento_sectorial' %}
+                                                <div class="mb-4" id="campo_monto_mora_telcos" style="display:none;">
+                                                    <label for="monto_mora_telcos" class="form-label">
+                                                        💰 Monto Total Mora en Telcos
+                                                        <span class="text-danger">*</span>
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">$</span>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               id="monto_mora_telcos"
+                                                               name="monto_mora_telcos"
+                                                               placeholder="Ej: 108000"
+                                                               data-tipo="currency"
+                                                               value="{{ form_values.get('monto_mora_telcos', '') if form_values else '' }}">
+                                                    </div>
+                                                    <div class="field-help">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Ingrese el monto EXACTO de la mora en Telcos.
+                                                        <strong>Si supera $200.000 será rechazo automático.</strong>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                {# Fallback: mostrar sin secciones si no hay secciones configuradas #}
+                                {% for criterio_id, criterio in scoring_criterios.items() %}
+                                <div class="mb-4">
+                                    <label for="{{ criterio_id }}" class="form-label">
+                                        {% if criterio.nombre %}
+                                            {{ criterio.nombre }}
+                                        {% else %}
+                                            {{ criterio_id }}
+                                        {% endif %}
+                                    </label>
+
+                                    {% set tipo_campo = criterio.tipo_campo if criterio.tipo_campo else 'number' %}
+                                    {% set placeholder = criterio.placeholder if criterio.placeholder else 'Ingrese valor' %}
+                                    {% set ayuda = criterio.ayuda if criterio.ayuda else 'Ingrese el valor para este criterio según la documentación disponible' %}
+
+                                    {% if tipo_campo == 'currency' %}
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="text"
+                                               class="form-control currency-input"
+                                               id="{{ criterio_id }}"
+                                               name="{{ criterio_id }}"
+                                               placeholder="{{ placeholder }}"
+                                               oninput="formatCurrencyInput(this)"
+                                               data-tipo="currency"
+                                               value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                               required>
+                                    </div>
+
+                                    {% elif tipo_campo == 'percentage' %}
+                                    <div class="input-group">
+                                        <input type="number"
+                                               class="form-control"
+                                               id="{{ criterio_id }}"
+                                               name="{{ criterio_id }}"
+                                               placeholder="{{ placeholder }}"
+                                               min="0"
+                                               max="300"
+                                               step="any"
+                                               data-tipo="percentage"
+                                               value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                               required>
+                                        <span class="input-group-text">%</span>
+                                    </div>
+
+                                    {% elif tipo_campo == 'select' %}
+                                    <select class="form-select"
+                                            id="{{ criterio_id }}"
+                                            name="{{ criterio_id }}"
+                                            data-tipo="select"
+                                            required>
+                                        {% if criterio.opciones %}
+                                            {% for opcion in criterio.opciones %}
+                                            <option value="{{ opcion.valor }}"
+                                                {% if form_values and criterio_id in form_values %}
+                                                    {% if form_values[criterio_id]|string == opcion.valor|string %}selected{% endif %}
+                                                {% elif loop.first and not (form_values and criterio_id in form_values) %}selected{% endif %}>
+                                                {{ opcion.texto }}
+                                            </option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="">Seleccione una opción</option>
+                                        {% endif %}
+                                    </select>
+
+                                    {% elif tipo_campo == 'text' %}
+                                    <input type="text"
+                                           class="form-control"
+                                           id="{{ criterio_id }}"
+                                           name="{{ criterio_id }}"
+                                           placeholder="{{ placeholder }}"
+                                           data-tipo="text"
+                                           value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                           required>
+
+                                    {% else %}
+                                    <input type="number"
+                                           class="form-control"
+                                           id="{{ criterio_id }}"
+                                           name="{{ criterio_id }}"
+                                           placeholder="{{ placeholder }}"
+                                           min="0"
+                                           max="999999999"
+                                           step="any"
+                                           data-tipo="number"
+                                           value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
+                                           required>
+                                    {% endif %}
+
+                                    <div class="field-help">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        {{ ayuda }}
+                                    </div>
+                                </div>
+
+                                {% if criterio_id == 'comportamiento_sectorial' %}
+                                <div class="mb-4" id="campo_monto_mora_telcos" style="display:none;">
+                                    <label for="monto_mora_telcos" class="form-label">
+                                        💰 Monto Total Mora en Telcos
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="text"
+                                               class="form-control"
+                                               id="monto_mora_telcos"
+                                               name="monto_mora_telcos"
+                                               placeholder="Ej: 108000"
+                                               data-tipo="currency"
+                                               value="{{ form_values.get('monto_mora_telcos', '') if form_values else '' }}">
+                                    </div>
+                                    <div class="field-help">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Ingrese el monto EXACTO de la mora en Telcos.
+                                        <strong>Si supera $200.000 será rechazo automático.</strong>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            </div><!-- Fin criterios-container -->
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Calcular Scoring</button>
+                                <button type="button" id="btnLimpiarDatos" class="btn btn-outline-secondary">Limpiar Datos</button>
+                            </div>
+                        </form>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const formScoring = document.getElementById('scoringForm');
+                            if (formScoring) {
+                                formScoring.addEventListener('submit', async function(e) {
+                                    e.preventDefault();
+                                    const submitBtn = this.querySelector('button[type="submit"]');
+                                    if (submitBtn) submitBtn.disabled = true;
+
+                                    try {
+                                        const response = await fetch('/api/csrf-token');
+                                        const data = await response.json();
+                                        const csrfInput = this.querySelector('input[name="csrf_token"]');
+                                        if (csrfInput && data.csrf_token) csrfInput.value = data.csrf_token;
+                                        this.submit();
+                                    } catch (error) {
+                                        if (submitBtn) submitBtn.disabled = false;
+                                        this.submit();
+                                    }
+                                });
+                            }
+                        });
+
+                        // Calcular edad automáticamente desde fecha de nacimiento
+                        const fechaNacInput = document.getElementById('fecha_nacimiento');
+                        const edadInput = document.getElementById('edad_solicitante');
+                        if (fechaNacInput && edadInput) {
+                            // Actualizar max de fecha dinámicamente (18 años atrás desde hoy)
+                            const hoy = new Date();
+                            const maxFecha = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+                            const minFecha = new Date(hoy.getFullYear() - 84, 0, 1);
+                            fechaNacInput.max = maxFecha.toISOString().split('T')[0];
+                            fechaNacInput.min = minFecha.toISOString().split('T')[0];
+
+                            fechaNacInput.addEventListener('change', function() {
+                                if (!this.value) { edadInput.value = ''; return; }
+                                const nac = new Date(this.value + 'T00:00:00');
+                                let edad = hoy.getFullYear() - nac.getFullYear();
+                                const m = hoy.getMonth() - nac.getMonth();
+                                if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+                                edadInput.value = edad;
+                            });
+
+                            // Si ya hay valor de fecha (recarga post-submit), calcular edad
+                            if (fechaNacInput.value) {
+                                fechaNacInput.dispatchEvent(new Event('change'));
+                            }
+                        }
+                        </script>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                {% if scoring_result %}
+                <div id="scoring-result" class="card result-card" style="background: {{ scoring_result.gradient }}; color: {{ scoring_result.text_color }}; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title mb-3" style="color: {{ scoring_result.text_color }};"><i class="bi bi-graph-up me-2"></i>Resultado de Scoring</h5>
+
+                        <!-- Alertas del sistema -->
+                        {% if scoring_result.alertas_sistema %}
+                        <div class="mb-3">
+                            {% for alerta in scoring_result.alertas_sistema %}
+                            <div class="alert alert-{{ alerta.tipo }} alert-dismissible fade show" style="color: #000;">
+                                <i class="bi bi-{{ alerta.icono }} me-2"></i>
+                                <strong>Alerta del Sistema:</strong> {{ alerta.mensaje }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Score principal en escala 0-100 -->
+                        <div class="score-value mb-2" style="font-size: 4rem; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ scoring_result.score }}</div>
+                        <div class="small mb-2" style="opacity: 0.9;" title="Score bruto: {{ scoring_result.score_bruto|default(0) }} / {{ scoring_result.score_bruto_max|default(100) }}">(escala 0-100)</div>
+                        <div class="score-label mb-3" style="font-size: 1.5rem; font-weight: 600;">{{ scoring_result.level }}</div>
+
+                        <!-- Indicador de aprobación -->
+                        {% if scoring_result.rechazo_automatico %}
+                        <div class="aprobacion-badge bg-danger">
+                            <i class="bi bi-x-circle-fill me-2"></i>RECHAZADO
+                        </div>
+                        <div class="alert alert-danger mt-2 mb-0">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Rechazo automático:</strong> {{ scoring_result.razon_rechazo or 'Factor de rechazo detectado' }}
+                        </div>
+                        {% elif scoring_result.requiere_comite %}
+                        <div class="aprobacion-badge bg-warning text-dark">
+                            <i class="bi bi-clock-history me-2"></i>PENDIENTE COMITÉ
+                        </div>
+                        <div class="alert alert-warning mt-2 mb-0" style="background-color: rgba(255, 193, 7, 0.15); border: 2px solid #ffc107;">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Este caso requiere aprobación del Comité de Crédito</strong>
+                        </div>
+                        <div class="alert alert-info mt-2 mb-0">
+                            <p class="mb-2"><strong>Razón:</strong> {{ scoring_result.razon_comite }}</p>
+                            <hr class="my-2">
+                            <p class="mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>Acción requerida:</strong><br>
+                                Por favor envíe el reporte de DataCrédito del cliente al administrador para su evaluación manual.
+                                El administrador revisará el caso y emitirá decisión final en las próximas 24-48 horas.
+                            </p>
+                        </div>
+                        {% elif scoring_result.aprobado %}
+                        <div class="aprobacion-badge bg-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>APROBADO
+                        </div>
+
+                      <!-- Nota de degradación por mora Telcos -->
+                        {% if scoring_result.degradacion_aplicada %}
+                        <div class="alert alert-warning mt-3 mb-0" style="background-color: rgba(255, 193, 7, 0.15); border: 2px solid #ffc107; color: #000;">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Nivel degradado:</strong> {{ scoring_result.nivel_original }} <i class="bi bi-arrow-right"></i> {{ scoring_result.level }}
+                            <br><small>{{ scoring_result.razon_degradacion }}</small>
+                        </div>
+                        {% endif %}
+
+                        <!-- Tasas diferenciadas por nivel de riesgo -->
+                        {% if scoring_result.tasa_ea is not none %}
+                        <div class="mt-3 mb-0">
+                            <div class="card border-0" style="background-color: rgba(255, 255, 255, 0.95);">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-3" style="color: #2c3e50;">
+                                        <i class="bi bi-percent me-1"></i>Tasas aplicables para {{ linea_credito_nombre|default('el crédito') }}
+                                    </h6>
+                                    <div class="row g-2">
+                                        <div class="col-4">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="small text-muted">Tasa E.A.</div>
+                                                <div class="fw-bold text-primary" style="font-size: 1.3em;">{{ scoring_result.tasa_ea }}%</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="small text-muted">Tasa Mensual</div>
+                                                <div class="fw-bold text-primary" style="font-size: 1.3em;">{{ "%.4f"|format(scoring_result.tasa_mensual) }}%</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="bg-light p-2 rounded text-center">
+                                                <div class="small text-muted">Aval (%)</div>
+                                                <div class="fw-bold text-success" style="font-size: 1.3em;">{{ "%.2f"|format(scoring_result.porcentaje_aval * 100) }}%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 small text-center" style="color: #666;">
+                                        <i class="bi bi-info-circle me-1"></i>Tasas según nivel de riesgo: <strong>{{ scoring_result.nivel }}</strong>
+                                    </div>
+
+                                    {% if scoring_result.diferencial_genero and scoring_result.diferencial_genero > 0 %}
+                                    <div class="alert alert-info mt-3 mb-0 py-2">
+                                        <i class="bi bi-gender-female me-1"></i>
+                                        <strong>Inclusión Financiera:</strong>
+                                        <br><small>Tasa base nivel de riesgo: {{ scoring_result.tasa_ea_sin_descuento }}% EA</small>
+                                        <br><small>Descuento género femenino: -{{ scoring_result.diferencial_genero }} pp</small>
+                                        <br><strong>Tasa final aprobada: {{ scoring_result.tasa_ea }}% EA</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% else %}
+                        <div class="aprobacion-badge bg-danger">
+                            <i class="bi bi-x-circle-fill me-2"></i>RECHAZADO
+                        </div>
+                        <div class="alert alert-danger mt-2 mb-0">
+                            <i class="bi bi-graph-down me-2"></i>
+                            <strong>Score insuficiente:</strong> El puntaje {{ scoring_result.score }} no alcanza el mínimo requerido de {{ scoring_result.puntaje_minimo|default(38) }} para aprobación{% if scoring_result.puntaje_minimo_comite %}, ni {{ scoring_result.puntaje_minimo_comite }} para revisión por comité{% endif %}.
+                        </div>
+                        {% endif %}
+
+                        <!-- Barra de progreso general -->
+                        <div class="progress mb-2 mt-4" style="height: 25px; border-radius: 12px; overflow: hidden;">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 33.33%;">Alto riesgo</div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 33.33%;">Moderado</div>
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 33.34%;">Bajo</div>
+                        </div>
+
+                        <!-- Mostrar umbral de aprobación -->
+                        <div class="small mt-2" style="opacity: 0.8;">
+                            Puntaje mínimo para aprobación: {{ scoring_result.puntaje_minimo }}
+                        </div>
+
+                        <!-- Botón para simular crédito con estos datos -->
+                        {% if scoring_result.aprobado and not scoring_result.requiere_comite %}
+                        <div class="mt-4 d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="abrirSimulacionDesdeScoring()">
+                                <i class="bi bi-calculator me-2"></i>💰 Simular Crédito
+                            </button>
+                            <small class="text-center" style="opacity: 0.7;">Ver cuota mensual con las tasas aplicadas</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tabla detallada de resultados -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="bi bi-list-check me-2"></i>Desglose Detallado
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 detail-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 35%;">Criterio</th>
+                                        <th style="width: 20%; white-space: nowrap;">Valor</th>
+                                        <th style="width: 15%; white-space: nowrap;">Puntos</th>
+                                        <th style="width: 15%; white-space: nowrap; min-width: 80px;" class="text-end">Cont.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for criterio in scoring_result.detalles %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="peso-badge">{{ criterio.peso }}%</span>
+                                                <span class="criterio-nombre">{{ criterio.nombre }}</span>
+                                            </div>
+                                            {% if criterio.descripcion %}
+                                            <small class="text-muted d-block mt-1">{{ criterio.descripcion }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td style="white-space: nowrap;">{{ criterio.valor|formato_valor(criterio.es_moneda|default(false), criterio.es_porcentaje|default(false)) }}</td>
+                                        <td style="white-space: nowrap;">{{ criterio.puntos_originales|formato_numero }}</td>
+                                        <td class="fw-bold text-end" style="white-space: nowrap;">{{ "%.1f"|format(criterio.puntos_ponderados) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="3" class="text-end">Puntaje Total:</td>
+                                        <td class="text-end">{{ scoring_result.score }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de barras para criterios principales -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="bi bi-bar-chart-fill me-2"></i>Contribución por Criterio
+                    </div>
+                    <div class="card-body">
+                        {% for criterio in scoring_result.detalles %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <div>{{ criterio.nombre }}</div>
+                                <div>{{ "%.1f"|format(criterio.puntos_ponderados) }}/{{ "%.1f"|format(criterio.puntos_maximos) }}</div>
+                            </div>
+                            {# Calcular porcentaje considerando rango completo (incluye negativos) #}
+                            {% set rango_total = criterio.puntos_maximos - criterio.puntos_minimos %}
+                            {% set puntos_desde_minimo = criterio.puntos_ponderados - criterio.puntos_minimos %}
+                            {% set porcentaje = (puntos_desde_minimo / rango_total * 100) if rango_total != 0 else 0 %}
+                            {% set porcentaje_safe = [0, [100, porcentaje]|min]|max %}
+                            <div class="progress criterio-progress">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: {{ "%.1f"|format(porcentaje_safe) }}%;"
+                                     aria-valuenow="{{ criterio.puntos_ponderados }}"
+                                     aria-valuemin="{{ criterio.puntos_minimos }}"
+                                     aria-valuemax="{{ criterio.puntos_maximos }}">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-calculator display-1 text-muted mb-3"></i>
+                        <h5 class="card-title">Calculadora de Scoring</h5>
+                        <p class="mb-4">Complete el formulario con los datos del cliente extraídos del reporte DataCrédito y haga clic en "Calcular Scoring" para obtener la evaluación de riesgo crediticio.</p>
+                        <hr>
+                        <div class="text-start mt-4">
+                            <h6 class="fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Instrucciones:</h6>
+                            <ol class="ps-3">
+                                <li>Asegúrese de tener el reporte DataCrédito del cliente a la vista</li>
+                                <li>Complete cada campo con el dato exacto del reporte</li>
+                                <li>Los campos que no aparecen en el reporte (estabilidad laboral) pregúntelos directamente al cliente</li>
+                                <li>El resultado le dará un puntaje entre 0-100 y una recomendación de aprobación</li>
+                                <li>Este sistema ayuda a tomar decisiones pero no reemplaza el criterio del asesor</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script para desplazar a los resultados cuando se cargan -->
+    <script>
+        // Script para desplazar a los resultados cuando se cargan
+        document.addEventListener('DOMContentLoaded', function() {
+
+            //  RECIBIR DATOS DESDE CAPACIDAD DE PAGO
+            const datosCapacidad = sessionStorage.getItem('capacidad_datos');
+
+            if (datosCapacidad) {
+                try {
+                    const datos = JSON.parse(datosCapacidad);
+
+                    // Pre-llenar identificación del cliente
+                    const nombreClienteInput = document.getElementById('nombre_cliente');
+                    if (nombreClienteInput && datos.nombre_cliente) {
+                        nombreClienteInput.value = datos.nombre_cliente;
+
+                        // También actualizar el campo hidden si existe
+                        const hiddenPersist = document.getElementById('nombre_cliente_hidden');
+                        if (hiddenPersist) {
+                            hiddenPersist.value = datos.nombre_cliente;
+                        }
+                    }
+
+                    // Pre-llenar ingresos netos si existe el campo
+                    const ingresoField = document.querySelector('input[name="ingresos_netos"]');
+                    if (ingresoField && datos.ingreso_mensual) {
+                        // Formatear con separadores de miles
+                        const ingresoFormateado = Math.round(datos.ingreso_mensual).toLocaleString('es-CO');
+                        ingresoField.value = ingresoFormateado;
+                    }
+
+                    // Mostrar notificación de integración
+                    const notificacion = document.createElement('div');
+                    notificacion.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    notificacion.innerHTML = `
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Datos importados desde Capacidad de Pago:</strong>
+                        Cliente: ${datos.nombre_cliente || 'N/A'},
+                        Ingreso: $${Math.round(datos.ingreso_mensual || 0).toLocaleString('es-CO')},
+                        Endeudamiento actual: ${(datos.porcentaje_endeudamiento || 0).toFixed(1)}%
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+
+                    // Insertar notificación al inicio del formulario
+                    const form = document.getElementById('scoringForm');
+                    if (form) {
+                        form.parentElement.insertBefore(notificacion, form);
+
+                        // Auto-ocultar después de 10 segundos
+                        setTimeout(() => {
+                            notificacion.classList.remove('show');
+                            setTimeout(() => notificacion.remove(), 500);
+                        }, 10000);
+                    }
+
+                    // Limpiar sessionStorage después de usar
+                    sessionStorage.removeItem('capacidad_datos');
+
+                    console.log('✅ Datos importados desde Capacidad de Pago:', datos);
+
+                } catch (error) {
+                    console.error('❌ Error al procesar datos de capacidad:', error);
+                    sessionStorage.removeItem('capacidad_datos');
+                }
+            }
+            // Verificar si hay resultados de scoring para mostrar
+            const resultCard = document.querySelector('.result-card');
+            if (resultCard) {
+                // Hay resultados, desplazar a ellos
+                setTimeout(function() {
+                    resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300); // Pequeño retraso para asegurar que todo está cargado
+            }
+
+            // Manejar el envío del formulario para desplazar después de recibir resultados
+            const scoringForm = document.getElementById('scoringForm');
+            if (scoringForm) {
+                scoringForm.addEventListener('submit', function() {
+                    // Combinar nombre + cédula antes de enviar
+                    const nombreInput = document.getElementById('nombre_cliente_nombre');
+                    const cedulaInput = document.getElementById('nombre_cliente_cedula');
+                    const nombreClienteHidden = document.getElementById('nombre_cliente');
+
+                    if (nombreInput && cedulaInput && nombreClienteHidden) {
+                        const nombre = nombreInput.value.trim();
+                        const cedula = cedulaInput.value.trim();
+
+                        // Combinar en formato: "Nombre - CC Cedula"
+                        nombreClienteHidden.value = `${nombre} - CC ${cedula}`;
+                    }
+
+                    // Guardar la posición actual de desplazamiento en sessionStorage
+                    sessionStorage.setItem('formSubmitted', 'true');
+                });
+            }
+        });
+
+        // Comprobar si venimos de un envío de formulario
+        if (sessionStorage.getItem('formSubmitted') === 'true') {
+            // Eliminar la bandera
+            sessionStorage.removeItem('formSubmitted');
+
+            // Verificar si hay resultados y desplazar a ellos
+            const resultCard = document.querySelector('.result-card');
+            if (resultCard) {
+                setTimeout(function() {
+                    resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            }
+        }
+    </script>
+
+<script>
+    /* ========================================
+       FORMATEO DE NÚMEROS MONETARIOS EN TIEMPO REAL
+       Función GLOBAL accesible desde inline oninput y listeners
+       ======================================== */
+
+    // Función GLOBAL para formatear números (disponible para oninput inline)
+    function formatNumberEnhanced(input) {
+        // Guardar posición del cursor para mantener experiencia fluida
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const oldLength = input.value.length;
+
+        // Limpiar valor: eliminar puntos y caracteres no numéricos
+        let value = input.value.replace(/\./g, '').replace(/\D/g, '').replace(/^0+/, '');
+
+        // Formatear con puntos de miles (1.000.000)
+        if (value) {
+            input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        } else {
+            input.value = '';
+        }
+
+        // Restaurar posición del cursor (UX crítica)
+        const newLength = input.value.length;
+        const diff = newLength - oldLength;
+
+        if (input.value.length > 0) {
+            input.selectionStart = Math.max(0, start + diff);
+            input.selectionEnd = Math.max(0, end + diff);
+        }
+    }
+
+    // ALIAS global para compatibilidad con oninput="formatNumber(this)"
+    function formatNumber(input) {
+        formatNumberEnhanced(input);
+    }
+
+    // ALIAS global para compatibilidad con oninput="formatCurrencyInput(this)"
+    function formatCurrencyInput(input) {
+        formatNumberEnhanced(input);
+    }
+
+    // Aplicar formateo a TODOS los campos monetarios al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔢 Inicializando formateo monetario...');
+
+        // 1. Formatear campos con data-tipo="currency" (criterios dinámicos)
+        const currencyInputs = document.querySelectorAll('input[data-tipo="currency"]');
+        currencyInputs.forEach(input => {
+            // Remover oninput inline si existe (evitar duplicados)
+            input.removeAttribute('oninput');
+
+            // Agregar listener programático (más robusto)
+            input.addEventListener('input', function() {
+                formatNumberEnhanced(this);
+            });
+
+            // Formatear valor inicial si existe
+            if (input.value) {
+                formatNumberEnhanced(input);
+            }
+
+            console.log(`✅ Formateo aplicado a: ${input.id || input.name}`);
+        });
+
+        // 2. Buscar campo "Coherencia Ingreso vs DANE" (puede tener cualquier ID)
+        const coherenciaInput = document.querySelector('[name="coherencia_ingreso_dane"]');
+        if (coherenciaInput) {
+            coherenciaInput.removeAttribute('oninput');
+
+            coherenciaInput.addEventListener('input', function() {
+                formatNumberEnhanced(this);
+            });
+            coherenciaInput.addEventListener('change', function() {
+                formatNumberEnhanced(this);
+            });
+
+            if (coherenciaInput.value) {
+                formatNumberEnhanced(coherenciaInput);
+            }
+
+            console.log('✅ Formateo aplicado a: coherencia_ingreso_dane');
+        }
+
+        // 3. Asegurar visibilidad de mensajes de ayuda
+        const fieldHelps = document.querySelectorAll('.field-help');
+        fieldHelps.forEach(help => {
+            help.style.display = 'block';
+            help.style.visibility = 'visible';
+            help.style.opacity = '1';
+        });
+
+        console.log(`🎉 Formateo monetario inicializado: ${currencyInputs.length + 2} campos`);
+    });
+
+// ========================================
+// CAMPOS AUTOCALCULADOS READONLY
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Hacer readonly los campos que se calculan automáticamente
+    // NOTA: proporcion_saldo_cupo es un select, no debe ser readonly
+    const camposAutocalculados = [
+        'monto_solicitado_ingreso'    // Relación Monto vs Ingreso
+    ];
+
+    camposAutocalculados.forEach(function(fieldId) {
+        const campo = document.getElementById(fieldId);
+        if (campo) {
+            campo.setAttribute('readonly', 'readonly');
+            campo.style.backgroundColor = '#e9ecef';
+            campo.style.cursor = 'not-allowed';
+            campo.title = 'Este campo se calcula automáticamente';
+        }
+    });
+});
+
+</script>
+<script>
+    /* ========================================
+       BOTÓN LIMPIAR DATOS
+       ======================================== */
+    // Función para limpiar el formulario - recarga página
+document.addEventListener('DOMContentLoaded', function() {
+    const btnLimpiarDatos = document.getElementById('btnLimpiarDatos');
+    if (btnLimpiarDatos) {
+        btnLimpiarDatos.addEventListener('click', function() {
+            // Solución robusta: recargar página limpia desde servidor
+            // Esto garantiza que todos los criterios dinámicos se regeneran correctamente
+            console.log('🔄 Limpiando formulario - recargando página...');
+            window.location.href = '/scoring';
+        });
+    }
+});
+</script>
+
+<!-- Script de navegación integrado en el partial -->
+<script src="/static/js/theme-unified.js"></script>
+
+<script>
+// Persistir identificación del cliente tras calcular
+document.addEventListener('DOMContentLoaded', function() {
+    const nombreClienteInput = document.getElementById('nombre_cliente');
+    const hiddenPersist = document.getElementById('nombre_cliente_hidden');
+
+    if (nombreClienteInput && hiddenPersist && hiddenPersist.value) {
+        nombreClienteInput.value = hiddenPersist.value;
+    }
+
+    // Sincronizar al escribir
+    if (nombreClienteInput && hiddenPersist) {
+        nombreClienteInput.addEventListener('input', function() {
+            hiddenPersist.value = this.value;
+        });
+    }
+
+    // Restaurar valores de nombre y cédula si existen en el DOM
+    const nombreInput = document.getElementById('nombre_cliente_nombre');
+    const cedulaInput = document.getElementById('nombre_cliente_cedula');
+
+    // Si los campos tienen valores (después de calcular), mantenerlos visibles
+    if (nombreInput && nombreInput.value) {
+        console.log('✅ Nombre persistido:', nombreInput.value);
+    }
+    if (cedulaInput && cedulaInput.value) {
+        console.log('✅ Cédula persistida:', cedulaInput.value);
+    }
+});
+</script>
+
+<!-- Script para mostrar/ocultar campo Monto Mora Telcos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectSectorial = document.getElementById('mora_sector_telcos');
+    const campoMora = document.getElementById('campo_monto_mora_telcos');
+    const inputMora = document.getElementById('monto_mora_telcos');
+
+    if (selectSectorial && campoMora && inputMora) {
+        // Función para actualizar visibilidad
+        function actualizarVisibilidadMoraTelcos() {
+            // Obtener el texto de la opción seleccionada
+            const selectedOption = selectSectorial.options[selectSectorial.selectedIndex];
+            const textoOpcion = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+            
+            // Verificar si la opción contiene "telcos" (indica mora en telcos)
+            const esMoraTelcos = textoOpcion.includes('telcos') && !textoOpcion.includes('sin mora');
+            
+            if (esMoraTelcos) {
+                campoMora.style.display = 'block';
+                inputMora.setAttribute('required', 'required');
+                console.log('📱 Campo mora telcos visible - opción:', textoOpcion.trim());
+            } else {
+                campoMora.style.display = 'none';
+                inputMora.removeAttribute('required');
+                inputMora.value = ''; // Limpiar valor si no es telcos
+            }
+        }
+
+        // Escuchar cambios en el select
+        selectSectorial.addEventListener('change', actualizarVisibilidadMoraTelcos);
+
+        // Verificar estado inicial (importante para cuando se recarga con valores)
+        actualizarVisibilidadMoraTelcos();
+
+        console.log('✅ Script mora telcos inicializado');
+    } else {
+        console.warn('⚠️ No se encontraron elementos para mora telcos:', {
+            selectSectorial: !!selectSectorial,
+            campoMora: !!campoMora,
+            inputMora: !!inputMora
+        });
+    }
+});
+</script>
+
+<script>
+// Función para abrir simulador desde resultado de scoring
+function abrirSimulacionDesdeScoring() {
+    // Obtener timestamp del caso desde sessionStorage o generar desde datos actuales
+    const timestamp = '{{ scoring_result.timestamp if scoring_result else "" }}';
+
+    if (timestamp) {
+        // Abrir simulador con timestamp del caso
+        const url = `/simulador?caso=${encodeURIComponent(timestamp)}`;
+        window.open(url, '_blank');
+    } else {
+        alert('Error: No se pudo identificar el caso. Intente nuevamente.');
+    }
+}
+
+// Función para cargar criterios de una línea de crédito dinámicamente
+async function cargarCriteriosLinea(lineaNombre) {
+    const select = document.getElementById('linea_credito');
+    const selectedOption = select.options[select.selectedIndex];
+    const lineaId = selectedOption.dataset.lineaId;
+    
+    if (!lineaId) {
+        console.warn('No se encontró ID de línea');
+        return;
+    }
+    
+    // Cargar documentos requeridos para extraccion automatica
+    cargarDocumentosRequeridos(lineaId);
+    
+    console.log(`🔄 Cargando criterios para línea ${lineaNombre} (ID: ${lineaId})...`);
+    
+    try {
+        const response = await fetch(`/api/scoring/formulario/${lineaId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log(`✅ Criterios cargados: ${data.criterios_agrupados.length} secciones`);
+            renderizarCriteriosFormulario(data.criterios_agrupados);
+        } else {
+            console.error('Error cargando criterios:', data.error);
+            alert('Error cargando configuración de la línea: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error en fetch:', error);
+    }
+}
+
+// Función para renderizar los criterios en el formulario
+function renderizarCriteriosFormulario(criteriosAgrupados) {
+    const container = document.getElementById('criterios-container');
+    if (!container) {
+        console.warn('No se encontró contenedor de criterios');
+        return;
+    }
+    
+    let html = '';
+    
+    criteriosAgrupados.forEach(grupo => {
+        const seccion = grupo.seccion;
+        const colorHex = seccion.color_hex || '#6c757d';
+        
+        html += `
+        <div class="criterios-seccion-form mb-4">
+            <div class="criterios-seccion-header-form" style="background-color: ${colorHex}; color: white;">
+                <i class="bi ${seccion.icono || 'bi-folder'}"></i>
+                <h6>${seccion.nombre}</h6>
+            </div>
+            <div class="criterios-seccion-body-form">
+        `;
+        
+        grupo.criterios.forEach(criterio => {
+            const tipo = criterio.tipo_campo || 'number';
+            const ayuda = criterio.ayuda || criterio.descripcion || '';
+            
+            html += `<div class="mb-4">`;
+            html += `<label for="${criterio.id}" class="form-label">${criterio.nombre || criterio.id}</label>`;
+            
+            if (tipo === 'currency') {
+                html += `
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="text"
+                           class="form-control currency-input"
+                           id="${criterio.id}"
+                           name="${criterio.id}"
+                           placeholder="Ingrese valor"
+                           oninput="formatCurrencyInput(this)"
+                           data-tipo="currency"
+                           value=""
+                           required>
+                </div>`;
+            } else if (tipo === 'percentage') {
+                html += `
+                <div class="input-group">
+                    <input type="number"
+                           class="form-control"
+                           id="${criterio.id}"
+                           name="${criterio.id}"
+                           placeholder="Ingrese valor"
+                           min="0"
+                           max="300"
+                           step="any"
+                           data-tipo="percentage"
+                           value=""
+                           required>
+                    <span class="input-group-text">%</span>
+                </div>`;
+            } else if (tipo === 'select' && criterio.opciones && criterio.opciones.length > 0) {
+                html += `<select class="form-select"
+                                id="${criterio.id}"
+                                name="${criterio.id}"
+                                data-tipo="select"
+                                required>`;
+                html += `<option value="">-- Seleccione --</option>`;
+                criterio.opciones.forEach(opcion => {
+                    html += `<option value="${opcion.valor}">${opcion.texto}</option>`;
+                });
+                html += `</select>`;
+            } else if (tipo === 'select' && criterio.rangos && criterio.rangos.length > 0) {
+                html += `<select class="form-select"
+                                id="${criterio.id}"
+                                name="${criterio.id}"
+                                data-tipo="select"
+                                required>`;
+                html += `<option value="">-- Seleccione --</option>`;
+                criterio.rangos.forEach(rango => {
+                    html += `<option value="${rango.puntos}">${rango.etiqueta || rango.descripcion || rango.min + '-' + rango.max}</option>`;
+                });
+                html += `</select>`;
+            } else {
+                // Determinar límites según el nombre del criterio
+                let min = '0', max = '999999999', step = '1';
+                const criterioNombre = (criterio.nombre || criterio.id || '').toLowerCase();
+                
+                // Campos de montos grandes (millones)
+                if (criterioNombre.includes('mora') || criterioNombre.includes('saldo') || 
+                    criterioNombre.includes('deuda') || criterioNombre.includes('valor') ||
+                    criterioNombre.includes('ingreso') || criterioNombre.includes('pago') ||
+                    criterioNombre.includes('cupo') || criterioNombre.includes('monto')) {
+                    max = '999999999'; // Hasta 999 millones
+                    step = '1';
+                }
+                // Campos de porcentajes o tasas
+                else if (criterioNombre.includes('porcentaje') || criterioNombre.includes('tasa') ||
+                         criterioNombre.includes('%') || criterioNombre.includes('ratio')) {
+                    max = '100';
+                    step = '0.01';
+                }
+                // Campos de edad o años
+                else if (criterioNombre.includes('edad') || criterioNombre.includes('años') ||
+                         criterioNombre.includes('antigüedad')) {
+                    max = '100';
+                    step = '1';
+                }
+                // Campos de cantidad o conteo
+                else if (criterioNombre.includes('cantidad') || criterioNombre.includes('número') ||
+                         criterioNombre.includes('count') || criterioNombre.includes('total')) {
+                    max = '999999';
+                    step = '1';
+                }
+                
+                html += `
+                <input type="number"
+                       class="form-control"
+                       id="${criterio.id}"
+                       name="${criterio.id}"
+                       placeholder="Ingrese valor"
+                       min="${min}"
+                       max="${max}"
+                       step="${step}"
+                       data-tipo="number"
+                       value=""
+                       required>`;
+            }
+            
+            if (ayuda) {
+                html += `<div class="field-help"><i class="bi bi-info-circle me-1"></i>${ayuda}</div>`;
+            }
+            
+            html += `</div>`;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    container.innerHTML = html;
+    console.log('✅ Formulario de criterios actualizado');
+}
+
+</script>
+
+<!-- EXTRACCION AUTOMATICA DE DOCUMENTOS -->
+<script>
+let documentosParaEnviar = {};
+let datosExtraidos = {};
+
+// --- Disparar carga de documentos si ya hay linea seleccionada al cargar ---
+document.addEventListener('DOMContentLoaded', function() {
+  const selectLinea = document.getElementById('linea_credito');
+  if (selectLinea && selectLinea.selectedIndex >= 0) {
+    const opt = selectLinea.options[selectLinea.selectedIndex];
+    const lineaId = opt.dataset.lineaId;
+    if (lineaId) {
+      cargarDocumentosRequeridos(lineaId);
+    }
+  }
+});
+
+async function cargarDocumentosRequeridos(lineaId) {
+  if (!lineaId) {
+    document.getElementById('cardDocumentos').style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/extraccion/fuentes-requeridas/${lineaId}`);
+    const data = await r.json();
+    const totalFuentes = data.total_fuentes || 0;
+    document.getElementById('cardDocumentos').style.display = 'block';
+    document.getElementById('badgeDocsPendientes').textContent = `${totalFuentes} fuente(s) requerida(s)`;
+    // Resetear estado
+    documentosParaEnviar = {};
+    document.getElementById('resultadoExtraccion').style.display = 'none';
+    document.getElementById('alertaPasswordPdf').style.display = 'none';
+    if (totalFuentes === 0) {
+      document.getElementById('zonaDocumentos').innerHTML = `
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          Esta linea no tiene extraccion automatica configurada.
+          Ingresa los datos manualmente.
+        </div>`;
+      document.getElementById('contenedorBtnAnalizar').style.display = 'none';
+      return;
+    }
+    renderizarZonaDocumentos(data);
+    document.getElementById('contenedorBtnAnalizar').style.display = 'flex';
+  } catch(e) { console.error('Error cargando documentos:', e); }
+}
+
+function renderizarZonaDocumentos(data) {
+  // Categorias de documentos: obligatorio, recomendado, opcional
+  const categoriasDoc = {
+    'cedula_imagen': 'obligatorio',
+    'midecisor_pdf': 'obligatorio',
+    'soporte_ingresos': 'obligatorio',
+    'extracto_bancario': 'obligatorio',
+    'recibo_servicios': 'recomendado',
+    'certificado_seguridad_social': 'recomendado',
+    'planilla_pila': 'opcional'
+  };
+  // Iconos personalizados por fuente
+  const iconosFuente = {
+    'cedula_imagen': '<i class="bi bi-person-vcard me-1 text-primary"></i>',
+    'midecisor_pdf': '<i class="bi bi-file-earmark-pdf me-1 text-danger"></i>',
+    'soporte_ingresos': '<i class="bi bi-cash-stack me-1 text-success"></i>',
+    'extracto_bancario': '<i class="bi bi-bank me-1 text-primary"></i>',
+    'recibo_servicios': '<i class="bi bi-lightning me-1 text-warning"></i>',
+    'certificado_seguridad_social': '<i class="bi bi-heart-pulse me-1 text-success"></i>',
+    'planilla_pila': '<i class="bi bi-file-earmark-spreadsheet me-1 text-info"></i>'
+  };
+  // Asegurar que las 3 fuentes nuevas esten al final si no vienen en data.documentos
+  const fuentesAdicionales = ['recibo_servicios', 'certificado_seguridad_social', 'planilla_pila'];
+  const docsList = [...(data.documentos || [])];
+  fuentesAdicionales.forEach(f => { if (!docsList.includes(f)) docsList.push(f); });
+  let html = '<div class="row g-3">';
+  docsList.forEach(fuente => {
+    // Caso especial: cedula_imagen renderiza DOS inputs (frontal + posterior)
+    if (fuente === 'cedula_imagen') {
+      html += `
+      <div class="col-md-6 col-lg-4">
+      <div class="border border-2 border-dashed rounded p-3 dropzone-area" id="zona_cedula_imagen">
+      <label class="form-label fw-semibold d-block mb-2 text-center">
+      <i class="bi bi-person-vcard me-1 text-primary"></i>
+      Cedula de Ciudadania
+</label>
+<!-- Opcion 1: Cedula completa (ambas caras en un solo archivo) -->
+<div class="mb-2">
+<label class="form-label small mb-1 fw-semibold">
+<i class="bi bi-file-earmark-person me-1 text-success"></i> Cedula completa (ambas caras)
+</label>
+<input type="file" class="form-control form-control-sm"
+accept=".jpg,.jpeg,.png,.pdf"
+id="file_cedula_completa"
+data-fuente="cedula_completa"
+onchange="registrarCedulaCompleta(this.files[0])">
+<div id="estado_cedula_completa" class="mt-1"></div>
+<small class="text-muted d-block mt-1">
+<i class="bi bi-info-circle me-1"></i>
+Si tienes un solo archivo con ambas caras, subelo aqui.
+</small>
+</div>
+<hr class="my-2">
+<small class="text-muted d-block text-center mb-2">O sube las caras por separado:</small>
+<!-- Opcion 2: Caras por separado -->
+<div class="mb-2" id="grupo_cedula_frontal">
+<label class="form-label small mb-1">
+<i class="bi bi-image me-1"></i> Parte delantera (donde esta la foto)
+</label>
+<input type="file" class="form-control form-control-sm"
+accept=".jpg,.jpeg,.png,.pdf"
+id="file_cedula_frontal"
+data-fuente="cedula_frontal"
+onchange="registrarArchivo('cedula_frontal', this.files[0])">
+<div id="estado_cedula_frontal" class="mt-1"></div>
+</div>
+`;
+      html += `
+      <div class="mb-2" id="grupo_cedula_posterior">
+<label class="form-label small mb-1">
+<i class="bi bi-card-text me-1"></i> Parte trasera (donde estan los datos)
+</label>
+<input type="file" class="form-control form-control-sm"
+accept=".jpg,.jpeg,.png,.pdf"
+id="file_cedula_posterior"
+data-fuente="cedula_posterior"
+onchange="registrarArchivo('cedula_posterior', this.files[0])">
+<div id="estado_cedula_posterior" class="mt-1"></div>
+</div>
+<small class="text-muted d-block text-center">
+<i class="bi bi-lightbulb me-1"></i>
+Con la parte trasera el sistema leera automaticamente el numero de cedula y demas datos
+</small>
+</div>
+</div>`;
+      return;
+    }
+    const cat = categoriasDoc[fuente] || '';
+    const isMultiFuente = (fuente === 'extracto_bancario' || fuente === 'soporte_ingresos' || fuente === 'certificado_seguridad_social');
+    const badgeSel = cat === 'recomendado'
+      ? '<span class="doc-card-badge recomendado">Recomendado</span>'
+      : (cat === 'opcional' ? '<span class="doc-card-badge opcional">Opcional</span>' : '');
+    html += '<div class="col-md-6 col-lg-4">'
+      + '<div class="border rounded-3 p-3 dropzone-area" id="zona_' + fuente + '"'
+      + ' ondragover="event.preventDefault(); this.classList.add(\'border-primary\',\'bg-primary\',\'bg-opacity-10\')"'
+      + ' ondragleave="this.classList.remove(\'border-primary\',\'bg-primary\',\'bg-opacity-10\')"'
+      + ' ondrop="event.preventDefault(); this.classList.remove(\'border-primary\',\'bg-primary\',\'bg-opacity-10\'); handleDrop(\'' + fuente + '\', event)">'
+      + '<div class="doc-card-header">'
+      + '<span class="doc-card-title">' + obtenerLabelFuente(fuente) + '</span>'
+      + badgeSel
+      + '</div>'
+      + '<input type="file" class="d-none" accept=".pdf,.jpg,.jpeg,.png"'
+      + ' id="file_' + fuente + '" data-fuente="' + fuente + '"'
+      + (isMultiFuente ? ' multiple' : '')
+      + ' onchange="registrarArchivo(\'' + fuente + '\', this.files[0])">'
+      + '<div id="fc_' + fuente + '"></div>'
+      + '</div>'
+      + '</div>';
+  });
+  if ((data.apis || []).length > 0) {
+    html += '<div class="col-12"><div class="alert alert-info mb-0 py-2">'
+      + '<i class="bi bi-plug me-2"></i><strong>Consultas automaticas:</strong> '
+      + data.apis.join(', ')
+      + '<small class="text-muted"> (se ejecutaran con la cedula ingresada)</small>'
+      + '</div></div>';
+  }
+  html += '<div class="col-12" id="avisoDocsRecomendados"><div class="alert alert-light border mb-0 py-2">'
+    + '<i class="bi bi-lightbulb me-1 text-info"></i>'
+    + '<small>Subir el <strong>recibo de servicios</strong> y el <strong>certificado de seguridad social</strong> mejora la precision del analisis. No son obligatorios.</small>'
+    + '</div></div>';
+  html += '</div>';
+  document.getElementById('zonaDocumentos').innerHTML = html;
+  setTimeout(initCompactFileInputs, 0);
+}
+
+function handleDrop(fuente, event) {
+  const files = event.dataTransfer.files;
+  if (files.length === 0) return;
+  const isMulti = (fuente === 'extracto_bancario' || fuente === 'soporte_ingresos' || fuente === 'certificado_seguridad_social');
+  const archivosValidos = Array.from(files).filter(f => {
+    const ext = f.name.toLowerCase();
+    return ext.endsWith('.pdf') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png');
+  });
+  if (archivosValidos.length === 0) {
+    alert('Solo se permiten archivos PDF, JPG o PNG');
+    return;
+  }
+  const fileInput = document.getElementById('file_' + fuente);
+  if (fileInput) {
+    const dt = new DataTransfer();
+    if (isMulti) {
+      Array.from(fileInput.files || []).forEach(f => dt.items.add(f));
+    }
+    archivosValidos.forEach(f => dt.items.add(f));
+    fileInput.files = dt.files;
+    fileInput.dispatchEvent(new Event('change'));
+  } else {
+    registrarArchivo(fuente, archivosValidos[0]);
+  }
+}
+
+function obtenerLabelFuente(fuente) {
+  const labels = {
+    'midecisor_pdf': 'Reporte MiDecisor (DataCredito)',
+    'extracto_bancario': 'Extracto Bancario (3 meses)',
+    'soporte_ingresos': 'Soporte de Ingresos (Nómina/Certificado)',
+    'certificado_laboral': 'Certificado Laboral',
+    'colilla_pago': 'Colilla de Nomina',
+    'declaracion_renta': 'Declaracion de Renta DIAN',
+    'credolab_reporte': 'Reporte Credolab',
+    'recibo_servicios': 'Recibo Servicios Publicos (Luz/Agua/Gas)',
+    'certificado_seguridad_social': 'Certificado EPS / Pension / Caja',
+    'planilla_pila': 'Planilla PILA'
+  };
+  return labels[fuente] || fuente;
+}
+
+function registrarArchivo(fuente, file) {
+  if (!file) return;
+  documentosParaEnviar[fuente] = file;
+  const estado = document.getElementById(`estado_${fuente}`);
+  const iconZone = document.getElementById(`dropzone_icon_${fuente}`);
+  if (iconZone) {
+    iconZone.innerHTML = `<i class="bi bi-file-earmark-check fs-3 text-success"></i>`;
+  }
+  if (estado) {
+    estado.innerHTML = `
+      <small class="text-success">
+        <i class="bi bi-check-circle me-1"></i>
+        ${file.name} (${(file.size/1024).toFixed(0)} KB)
+      </small>`;
+  }
+  // Marcar borde verde
+  const zona = document.getElementById(`zona_${fuente}`);
+  if (zona) {
+    zona.classList.remove('border-dashed');
+    zona.classList.add('border-success');
+  }
+}
+
+function registrarCedulaCompleta(file) {
+  if (!file) return;
+  // Registrar como cedula_completa y quitar frontal/posterior si existian
+  documentosParaEnviar['cedula_completa'] = file;
+  delete documentosParaEnviar['cedula_frontal'];
+  delete documentosParaEnviar['cedula_posterior'];
+  // Limpiar inputs separados
+  const inputF = document.getElementById('file_cedula_frontal');
+  const inputP = document.getElementById('file_cedula_posterior');
+  if (inputF) inputF.value = '';
+  if (inputP) inputP.value = '';
+  const estadoF = document.getElementById('estado_cedula_frontal');
+  const estadoP = document.getElementById('estado_cedula_posterior');
+  if (estadoF) estadoF.innerHTML = '';
+  if (estadoP) estadoP.innerHTML = '';
+  // Mostrar estado del archivo completo
+  const estado = document.getElementById('estado_cedula_completa');
+  if (estado) {
+    estado.innerHTML = `
+      <small class="text-success">
+        <i class="bi bi-check-circle me-1"></i>
+        ${file.name} (${(file.size/1024).toFixed(0)} KB)
+      </small>`;
+  }
+  // Marcar borde verde en toda la zona
+  const zona = document.getElementById('zona_cedula_imagen');
+  if (zona) {
+    zona.classList.remove('border-dashed');
+    zona.classList.add('border-success');
+  }
+}
+
+function agregarArchivo(contenedor, baseName, maxArchivos) {
+  agregarArchivoConFile(contenedor, baseName, maxArchivos, null);
+}
+
+function agregarArchivoConFile(contenedor, baseName, maxArchivos, filePreseleccionado) {
+  const existentes = contenedor.querySelectorAll('.extra-file-wrapper').length;
+  if (existentes >= maxArchivos) {
+    alert('Maximo ' + maxArchivos + ' archivos adicionales');
+    return;
+  }
+  // Generar ID unico basado en timestamp para evitar colisiones
+  const uid = Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+  const fuenteId = baseName + '_' + (existentes + 1);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'extra-file-wrapper mt-2 border rounded p-2 bg-light';
+  wrapper.id = 'extra_wrap_' + uid;
+  wrapper.innerHTML = `
+    <div class="d-flex align-items-center gap-2">
+      <input type="file" class="form-control form-control-sm flex-grow-1"
+             accept=".pdf,.jpg,.jpeg,.png"
+             id="file_extra_${uid}"
+             data-fuente="${fuenteId}"
+             onchange="registrarArchivoExtra(this, '${fuenteId}', '${uid}')">
+      <button type="button" class="btn btn-outline-danger btn-sm px-2"
+              onclick="eliminarArchivoExtra('${uid}', '${fuenteId}')">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div id="estado_extra_${uid}" class="mt-1"></div>
+  `;
+  contenedor.appendChild(wrapper);
+  // Si hay archivo preseleccionado (por drag&drop), asignarlo automaticamente
+  if (filePreseleccionado) {
+    const input = wrapper.querySelector('input[type="file"]');
+    const dt = new DataTransfer();
+    dt.items.add(filePreseleccionado);
+    input.files = dt.files;
+    registrarArchivoExtra(input, fuenteId, uid);
+  }
+}
+
+function registrarArchivoExtra(input, fuenteId, uid) {
+  const file = input.files[0];
+  if (!file) return;
+  documentosParaEnviar[fuenteId] = file;
+  const estado = document.getElementById('estado_extra_' + uid);
+  if (estado) {
+    estado.innerHTML = `
+      <small class="text-success">
+        <i class="bi bi-check-circle me-1"></i>
+        ${file.name} (${(file.size/1024).toFixed(0)} KB)
+      </small>`;
+  }
+  // Ocultar el input y mostrar solo el estado
+  input.style.display = 'none';
+  // Marcar borde verde en el wrapper
+  const wrapper = document.getElementById('extra_wrap_' + uid);
+  if (wrapper) {
+    wrapper.classList.remove('bg-light');
+    wrapper.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+  }
+}
+
+function eliminarArchivoExtra(uid, fuenteId) {
+  delete documentosParaEnviar[fuenteId];
+  const wrapper = document.getElementById('extra_wrap_' + uid);
+  if (wrapper) wrapper.remove();
+}
+
+function sincronizarCedula(valor) {
+  const campoCedulaForm = document.getElementById('nombre_cliente_cedula');
+  if (campoCedulaForm && !campoCedulaForm.value) {
+    campoCedulaForm.value = valor;
+  }
+}
+
+async function analizarDocumentos() {
+  const cedula = document.getElementById('cedula_extraccion').value.trim();
+  // Permitir sin cedula si hay imagen de cedula (el backend la extraera)
+  const tieneCedulaImagen = documentosParaEnviar['cedula_posterior'] || documentosParaEnviar['cedula_frontal'] || documentosParaEnviar['cedula_completa'];
+  if (!cedula && !tieneCedulaImagen) {
+    alert('Ingresa el numero de cedula o sube la imagen de cedula antes de analizar');
+    document.getElementById('cedula_extraccion').focus();
+    return;
+  }
+  if (Object.keys(documentosParaEnviar).length === 0) {
+    alert('Sube al menos un documento para analizar');
+    return;
+  }
+  const texto = document.getElementById('textoEstadoExtraccion');
+  iaBotonInicio();
+  try {
+    const formData = new FormData();
+    formData.append('cedula', cedula);
+    // Enviar línea de crédito para auto-inyectar opciones correctas en el prompt IA
+    const _selLinea = document.getElementById('linea_credito');
+    const _lineaId = _selLinea ? (_selLinea.options[_selLinea.selectedIndex]?.dataset?.lineaId || '') : '';
+    if (_lineaId) formData.append('linea_id', _lineaId);
+    // Enviar ingreso declarado como contexto para triangulacion
+    const ingresoDeclarado = document.getElementById('ingreso_declarado');
+    if (ingresoDeclarado && ingresoDeclarado.value) {
+      const valorLimpio = ingresoDeclarado.value.replace(/\./g, '').replace(/\$/g, '').replace(/\s/g, '').trim();
+      formData.append('ingreso_declarado', valorLimpio);
+    }
+    // IMPORTANTE: Enviar cada archivo con nombre = fuente (no archivos[])
+    Object.entries(documentosParaEnviar).forEach(([fuente, file]) => {
+      formData.append(fuente, file);
+    });
+    const csrfResp = await fetch('/api/csrf-token');
+    const csrfData = await csrfResp.json();
+    const response = await fetch('/api/extraccion/analizar', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfData.csrf_token },
+      body: formData
+    });
+    const resultado = await response.json();
+    console.log('Respuesta extraccion:', resultado);
+
+    // Función auxiliar para mostrar mensaje según estado
+    function mostrarEstadoExtraccion(tipo, mensaje, datos) {
+      const resultadoDiv = document.getElementById('resultadoExtraccion');
+      const alertaDiv = resultadoDiv.querySelector('.alert');
+
+      // Remover clases de color anteriores
+      alertaDiv.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+
+      // Agregar clase según tipo
+      if (tipo === 'exito') {
+        alertaDiv.classList.add('alert-success');
+        alertaDiv.innerHTML = `
+          <i class="bi bi-check-circle me-2"></i>
+          <strong>Extracción completada.</strong>
+          ${mensaje}
+          <button type="button" class="btn btn-sm btn-outline-success ms-3" onclick="verDetalleExtraccion()">
+            Ver detalle
+          </button>
+        `;
+      } else if (tipo === 'parcial') {
+        alertaDiv.classList.add('alert-warning');
+        alertaDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Extracción parcial.</strong>
+          ${mensaje}
+          <button type="button" class="btn btn-sm btn-outline-warning ms-3" onclick="verDetalleExtraccion()">
+            Ver detalle
+          </button>
+        `;
+      } else if (tipo === 'error') {
+        alertaDiv.classList.add('alert-danger');
+        alertaDiv.innerHTML = `
+          <i class="bi bi-x-circle me-2"></i>
+          <strong>Error en la extracción.</strong>
+          ${mensaje}
+        `;
+      }
+
+      resultadoDiv.style.display = 'block';
+      document.getElementById('alertaPasswordPdf').style.display = 'none';
+
+      // Guardar datos para verDetalleExtraccion si existen
+      if (datos) {
+        datosExtraidos = datos;
+        mostrarAlertasFraudePDF(datos);
+      }
+    }
+
+    if (resultado.requiere_password) {
+      document.getElementById('fuentePdfBloqueada').value = resultado.fuente;
+      document.getElementById('alertaPasswordPdf').style.display = 'block';
+      texto.textContent = 'PDF protegido - ingresa la contrasena manualmente';
+      iaBotonError();
+      return;
+    }
+
+    // Verificar si hay errores de API en la respuesta
+    if (resultado.errores_api && resultado.errores_api.length > 0) {
+      // Hay errores de API - verificar si es éxito parcial o falla total
+      if (resultado.success && resultado.datos) {
+        // Éxito parcial - algunos documentos se procesaron
+        const totalLlenados = preLlenarFormulario(resultado.datos);
+        iaBotonExito(totalLlenados);
+        texto.textContent = `${totalLlenados} campo(s) pre-llenados (con errores)`;
+
+        // Contar cuántos documentos fallaron por errores de API
+        const docsFallidos = resultado.errores_api.length;
+        const mensaje = `Se extrajeron los datos de ${totalLlenados} campos, pero ${docsFallidos} documento(s) tuvieron problemas por sobrecarga del servicio. 
+        <br><br>
+        <small class="text-muted">
+          <i class="bi bi-info-circle me-1"></i>
+          Esto es un problema temporal del proveedor de IA. Puedes intentar subir nuevamente los documentos fallidos en unos minutos. 
+          Si el error persiste, consulta al administrador del sistema.
+        </small>`;
+
+        mostrarEstadoExtraccion('parcial', mensaje, resultado.datos);
+      } else {
+        // Falla completa por errores de API
+        iaBotonError();
+        texto.textContent = 'Error del servicio de IA';
+
+        // Mensaje amigable para usuario no técnico
+        const mensaje = `El servicio de inteligencia artificial está temporalmente sobrecargado.
+        <br><br>
+        <div class="alert alert-light border mt-2 mb-0">
+          <strong>¿Qué puedes hacer?</strong><br>
+          1. Espera unos minutos y vuelve a intentar<br>
+          2. Si el problema continúa, contacta al administrador<br>
+          <small class="text-muted">Código de error: ${resultado.errores_api[0].code || 'desconocido'}</small>
+        </div>`;
+
+        mostrarEstadoExtraccion('error', mensaje, null);
+      }
+    } else if (resultado.success && resultado.datos) {
+      // Éxito total sin errores de API
+      const totalLlenados = preLlenarFormulario(resultado.datos);
+      iaBotonExito(totalLlenados);
+      texto.textContent = `${totalLlenados} campo(s) pre-llenados`;
+      mostrarEstadoExtraccion('exito', 'Los campos del formulario han sido pre-llenados. Revisa y corrige si es necesario antes de calcular.', resultado.datos);
+    } else {
+      // Error general (no es de API)
+      iaBotonError();
+      texto.textContent = 'Error: ' + (resultado.error || 'No se pudo procesar');
+      mostrarEstadoExtraccion('error', resultado.error || 'No se pudo procesar el documento. Verifica que los archivos sean válidos.', null);
+    }
+  } catch(e) {
+    iaBotonError();
+    texto.textContent = 'Error de conexion';
+    console.error(e);
+  }
+}
+
+async function reintentarConPassword() {
+  const password = document.getElementById('passwordManualPdf').value;
+  const fuente = document.getElementById('fuentePdfBloqueada').value;
+  const cedula = document.getElementById('cedula_extraccion').value;
+  if (!password) return;
+  const formData = new FormData();
+  formData.append('cedula', cedula);
+  formData.append('password_manual', password);
+  const _selLinea2 = document.getElementById('linea_credito');
+  const _lineaId2 = _selLinea2 ? (_selLinea2.options[_selLinea2.selectedIndex]?.dataset?.lineaId || '') : '';
+  if (_lineaId2) formData.append('linea_id', _lineaId2);
+  formData.append(fuente, documentosParaEnviar[fuente]);
+  const csrfResp = await fetch('/api/csrf-token');
+  const csrfData = await csrfResp.json();
+  const response = await fetch('/api/extraccion/analizar-con-password', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfData.csrf_token },
+    body: formData
+  });
+  const resultado = await response.json();
+  if (resultado.success && resultado.datos) {
+    Object.assign(datosExtraidos, resultado.datos);
+    preLlenarFormulario(datosExtraidos);
+    document.getElementById('alertaPasswordPdf').style.display = 'none';
+    document.getElementById('resultadoExtraccion').style.display = 'block';
+  }
+}
+
+function preLlenarFormulario(datos) {
+  let contadorLlenados = 0;
+  // DEBUG: Mostrar contenido completo de datos recibidos
+  console.log('=== DEBUG PRE-LLENADO ===');
+  console.log('Datos recibidos:', JSON.stringify(datos, null, 2));
+
+  // --- Campos especiales extraidos de la cedula ---
+  if (datos._cedula_numero) {
+    const num = String(datos._cedula_numero);
+    // Llenar input del card de documentos
+    const cedulaExtInput = document.getElementById('cedula_extraccion');
+    if (cedulaExtInput) { cedulaExtInput.value = num; }
+    // Llenar campo del formulario de scoring
+    const cedulaFormInput = document.getElementById('nombre_cliente_cedula');
+    if (cedulaFormInput) { cedulaFormInput.value = num; cedulaFormInput.classList.add('border-success'); }
+    // Badge verde debajo del input de cedula del card
+    const zonaCedula = document.getElementById('zona_cedula_imagen');
+    if (zonaCedula) {
+      let badge = document.getElementById('badge_cedula_leida');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'badge_cedula_leida';
+        badge.className = 'alert alert-success py-1 px-2 mt-2 mb-0 small text-center';
+        zonaCedula.appendChild(badge);
+      }
+      badge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Cedula leida automaticamente: <strong>' + num + '</strong>';
+    }
+    contadorLlenados++;
+    console.log('Pre-llenado especial: _cedula_numero = ' + num);
+  }
+  if (datos._nombre_cliente) {
+    // Llenar ambos posibles campos de nombre
+    const nombreInput1 = document.getElementById('nombre_cliente_nombre');
+    const nombreInput2 = document.querySelector('[name="nombre_cliente"]');
+    if (nombreInput1) { nombreInput1.value = datos._nombre_cliente; nombreInput1.classList.add('border-success'); }
+    if (nombreInput2 && nombreInput2 !== nombreInput1) { nombreInput2.value = datos._nombre_cliente; nombreInput2.classList.add('border-success'); }
+    if (nombreInput1 || nombreInput2) { contadorLlenados++; }
+    console.log('Pre-llenado especial: _nombre_cliente = ' + datos._nombre_cliente);
+  }
+  if (datos._fecha_nacimiento) {
+    const fechaInput = document.getElementById('fecha_nacimiento');
+    if (fechaInput) { fechaInput.value = datos._fecha_nacimiento; fechaInput.classList.add('border-success'); fechaInput.dispatchEvent(new Event('change', { bubbles: true })); contadorLlenados++; }
+    console.log('Pre-llenado especial: _fecha_nacimiento = ' + datos._fecha_nacimiento);
+  }
+  if (datos._edad_solicitante) {
+    const edadInput = document.getElementById('edad_solicitante');
+    if (edadInput) { edadInput.value = datos._edad_solicitante; edadInput.classList.add('border-success'); contadorLlenados++; }
+    console.log('Pre-llenado especial: _edad_solicitante = ' + datos._edad_solicitante);
+  }
+
+  // Pre-llenar género desde cédula
+  const sexoCedula = datos['_sexo_cedula'] || datos['sexo_cedula'];
+  if (sexoCedula) {
+    const selectGenero = document.getElementById('genero_solicitante');
+    if (selectGenero) {
+      const sexoNorm = sexoCedula.toString().toUpperCase().trim();
+      for (let i = 0; i < selectGenero.options.length; i++) {
+        if (selectGenero.options[i].value.toUpperCase().trim() === sexoNorm) {
+          selectGenero.selectedIndex = i;
+          selectGenero.classList.add('border-success');
+          contadorLlenados++;
+          console.log('Pre-llenado especial: _sexo_cedula = ' + selectGenero.options[i].text);
+          break;
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // PRE-LLENADO INTELIGENTE: ingreso_verificado
+  // ============================================
+  const campoIngVerif = document.getElementById('ingreso_verificado');
+  if (campoIngVerif) {
+    let ingresoVerificado = null;
+    let fuenteDetectada = null;
+    // Fuente 1: Campo directo del backend (_ingreso_verificado)
+    if (datos['_ingreso_verificado']) {
+      ingresoVerificado = datos['_ingreso_verificado'];
+      fuenteDetectada = datos['_fuente_verificacion'] || 'Nómina';
+    } else if (datos['ingreso_verificado']) {
+      ingresoVerificado = datos['ingreso_verificado'];
+      fuenteDetectada = datos['fuente_verificacion'] || 'Nómina';
+    }
+    // Fuente 2: Datos internos de nomina (campos con prefijo _)
+    else if (datos['_neto_pagar']) {
+      ingresoVerificado = datos['_neto_pagar'];
+      fuenteDetectada = 'Nómina';
+    } else if (datos['_salario_basico']) {
+      ingresoVerificado = datos['_salario_basico'];
+      fuenteDetectada = 'Nómina';
+    } else if (datos['_total_devengados']) {
+      ingresoVerificado = datos['_total_devengados'];
+      fuenteDetectada = 'Nómina';
+    }
+    // Aplicar al campo
+    if (ingresoVerificado) {
+      const valor = parseFloat(String(ingresoVerificado).replace(/[^0-9.-]/g, ''));
+      if (!isNaN(valor) && valor > 0) {
+        campoIngVerif.value = valor;
+        if (typeof formatCurrencyInput === 'function') formatCurrencyInput(campoIngVerif);
+        campoIngVerif.classList.add('border-success');
+        contadorLlenados++;
+        console.log('Pre-llenado ingreso_verificado: ' + valor + ' (fuente: ' + fuenteDetectada + ')');
+      }
+    } else {
+      console.log('ingreso_verificado: No se encontro dato directo. El asesor debe digitarlo.');
+    }
+    // Pre-seleccionar fuente de verificacion si se detecto
+    if (fuenteDetectada) {
+      const selectFuente = document.getElementById('fuente_verificacion');
+      if (selectFuente) {
+        const fuenteNorm = fuenteDetectada.toLowerCase().trim();
+        for (let i = 0; i < selectFuente.options.length; i++) {
+          const optText = selectFuente.options[i].text.toLowerCase().trim();
+          if (optText === fuenteNorm || optText.includes(fuenteNorm) || fuenteNorm.includes(optText)) {
+            selectFuente.selectedIndex = i;
+            selectFuente.classList.add('border-success');
+            contadorLlenados++;
+            console.log('Pre-llenado fuente_verificacion: ' + selectFuente.options[i].text);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // FALLBACK: fuente_verificacion por fuentes procesadas
+  // ============================================
+  const selectFuenteFallback = document.getElementById('fuente_verificacion');
+  if (selectFuenteFallback && selectFuenteFallback.selectedIndex <= 0) {
+    const fuentes = datos['_fuentes_procesadas'] || [];
+    let fuenteAuto = null;
+    if (fuentes.includes('planilla_pila')) {
+      fuenteAuto = 'PILA';
+    } else if (fuentes.includes('soporte_ingresos')) {
+      fuenteAuto = 'Nómina';
+    } else if (fuentes.includes('certificado_seguridad_social')) {
+      fuenteAuto = 'Certificación laboral';
+    }
+    if (fuenteAuto) {
+      const fuenteNorm = fuenteAuto.toLowerCase().trim();
+      for (let i = 0; i < selectFuenteFallback.options.length; i++) {
+        const optText = selectFuenteFallback.options[i].text.toLowerCase().trim();
+        if (optText === fuenteNorm || optText.includes(fuenteNorm) || fuenteNorm.includes(optText)) {
+          selectFuenteFallback.selectedIndex = i;
+          selectFuenteFallback.classList.add('border-success');
+          contadorLlenados++;
+          console.log('Fallback fuente_verificacion: ' + selectFuenteFallback.options[i].text);
+          break;
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // PENALIZACIONES AUTOMATICAS (read-only)
+  // ============================================
+  function autoLlenarPenalizacion(criterioName, datosVal, calcularIndice, labelDebug) {
+    const select = document.querySelector('select[name="' + criterioName + '"]');
+    if (!select) {
+      console.log('Penalizacion ' + labelDebug + ': select no encontrado para ' + criterioName);
+      return;
+    }
+    console.log(labelDebug + ':', JSON.stringify(datosVal));
+    const indiceOpcion = calcularIndice(datosVal);
+    if (indiceOpcion === null || indiceOpcion < 0 || indiceOpcion >= select.options.length) {
+      console.log('Penalizacion ' + labelDebug + ': indice invalido ' + indiceOpcion);
+      return;
+    }
+    // PASO 1: Seleccionar la opcion usando selectedIndex (mas confiable que opt.selected)
+    select.selectedIndex = indiceOpcion;
+    const valorSeleccionado = select.value;
+    console.log('Auto-llenado penalizacion: ' + labelDebug + ' = indice ' + indiceOpcion +
+                ' (' + select.options[indiceOpcion].text + ') valor=' + valorSeleccionado);
+    // PASO 2: Crear hidden input ANTES de deshabilitar
+    let hiddenInput = select.parentNode.querySelector('input[type="hidden"][name="' + criterioName + '"]');
+    if (!hiddenInput) {
+      hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = criterioName;
+      select.parentNode.insertBefore(hiddenInput, select.nextSibling);
+    }
+    hiddenInput.value = valorSeleccionado;
+    // PASO 3: Deshabilitar y renombrar el select DESPUES con setTimeout
+    setTimeout(function() {
+      select.name = '_disabled_' + criterioName;
+      select.disabled = true;
+      select.style.borderColor = '#0dcaf0';
+      select.style.opacity = '0.8';
+      select.title = 'Calculado automaticamente por el sistema';
+    }, 50);
+    contadorLlenados++;
+  }
+
+  // --- Validacion Nomina -> criterio_1774973681686 ---
+  // Opciones select: 0=Seleccione, 1=4/4 OK, 2=3/4 OK, 3=2/4 o menos, 4=Nomina no proporcionada, 5=Posible adulteracion
+  autoLlenarPenalizacion('criterio_1774973681686',
+    datos['_validacion_nomina'] || null,
+    function(vn) {
+      if (!vn) {
+        var fp = datos['_fuentes_procesadas'] || [];
+        return fp.includes('soporte_ingresos') ? 0 : 4; // sin datos: no proporcionada
+      }
+      var pasadas = vn.validaciones_pasadas || 0;
+      var total = vn.validaciones_total || 0;
+      var alertas = vn.alertas || [];
+      var adulteracion = alertas.some(function(a) {
+        return a.toLowerCase().indexOf('adulter') >= 0 || a.toLowerCase().indexOf('fraude') >= 0;
+      });
+      if (adulteracion) return 5;
+      if (total === 0) return 4;
+      if (pasadas >= 4 || (pasadas === total && total >= 3)) return 1;
+      if (pasadas >= 3) return 2;
+      return 3;
+    },
+    'Validacion Nomina'
+  );
+
+  // --- Coherencia Cruzada -> criterio_1774973775309 ---
+  // Opciones select: 0=Seleccione, 1=Alta, 2=Parcial, 3=Baja, 4=Grave, 5=No evaluable
+  autoLlenarPenalizacion('criterio_1774973775309',
+    datos['_validacion_cruzada'] || null,
+    function(vc) {
+      if (!vc) {
+        var fp = datos['_fuentes_procesadas'] || [];
+        return fp.length < 2 ? 5 : 0;
+      }
+      var nivel = vc.nivel_riesgo || 'bajo';
+      var incons = vc.inconsistencias || [];
+      if (incons.length === 0 && nivel === 'bajo') return 1;
+      if (nivel === 'bajo') return 2;
+      if (nivel === 'medio') return 3;
+      if (nivel === 'alto') return 4;
+      return 5;
+    },
+    'Coherencia Cruzada'
+  );
+
+  // --- Libranzas Detectadas en Nomina -> criterio_1775053176933 ---
+  // Opciones select: 0=Seleccione, 1=Sin libranzas, 2=<=15%, 3=15-30%, 4=>30%, 5=Multiples, 6=Nomina no proporcionada
+  // Calcula libranza estimada: total_deducciones - salud - pension (mas confiable que alertas IA)
+  var _vnLib = datos['_validacion_nomina'] || null;
+  var _dnLib = _vnLib ? (_vnLib.datos_nomina || {}) : {};
+  var _salLib  = parseFloat(_dnLib.salario_basico) || 0;
+  var _totDed  = parseFloat(_dnLib.total_deducciones) || 0;
+  var _salud   = parseFloat(_dnLib.deduccion_salud) || 0;
+  var _pension = parseFloat(_dnLib.deduccion_pension) || 0;
+
+  var _indiceLibranza = 1; // default: Sin libranzas detectadas
+  var _pctLibranza = 0;
+
+  if (_salLib > 0 && _totDed > 0) {
+    var _libranzaEst = _totDed - _salud - _pension;
+    _pctLibranza = (_libranzaEst / _salLib) * 100;
+    console.log('📊 Libranza estimada: $' + Math.round(_libranzaEst).toLocaleString() +
+                ' = ' + _pctLibranza.toFixed(1) + '% del salario');
+
+    if (_libranzaEst <= 0) {
+      _indiceLibranza = 1; // Sin libranzas detectadas → 0
+    } else if (_pctLibranza <= 15) {
+      _indiceLibranza = 2; // <=15% del salario → -3
+    } else if (_pctLibranza <= 30) {
+      _indiceLibranza = 3; // 15-30% del salario → -8
+    } else {
+      _indiceLibranza = 4; // >30% del salario → -15
+    }
+  } else if (!_vnLib) {
+    _indiceLibranza = 6; // Nomina no proporcionada → 0
+  }
+
+  autoLlenarPenalizacion(
+    'criterio_1775053176933',
+    null,
+    function() { return _indiceLibranza; },
+    'Libranzas Nomina (' + _pctLibranza.toFixed(1) + '% calculado)'
+  );
+
+  const camposForm = document.querySelectorAll('#scoringForm [name]');
+  const nombresForm = Array.from(camposForm).map(f => f.name);
+  console.log('Campos del formulario (' + nombresForm.length + '):', nombresForm);
+  Object.entries(datos).forEach(([codigo, valor]) => {
+    if (codigo.startsWith('_')) { console.log('  Saltando metadato: ' + codigo); return; }
+    if (valor === null || valor === undefined) { console.log('  Saltando null: ' + codigo); return; }
+    console.log('  Buscando campo name=' + codigo + ' valor=' + valor);
+    const campo = document.querySelector('[name="' + codigo + '"]');
+    if (campo) {
+      if (campo.tagName === 'SELECT') {
+        // Normalizar dashes: em dash (—), en dash (–) y guion (-) se tratan igual
+        const normDash = s => s.replace(/[\u2014\u2013\u2012\u2015]/g, '-');
+        const valorStr = normDash(String(valor).trim().toLowerCase());
+        const valorNum = Number(valor);
+        let encontrado = false;
+
+        // DEBUG: Mostrar opciones del select
+        console.log(`  SELECT "${codigo}" opciones:`,
+          Array.from(campo.options).map(o =>
+            `value="${o.value}" text="${o.text}"`
+          )
+        );
+        console.log(`  Intentando asignar: "${valor}" (normalizado: "${valorStr}")`);
+
+        // Intento 1: match exacto por texto (con dashes normalizados)
+        for (let opt of campo.options) {
+          const optTxt = normDash(opt.text.trim().toLowerCase());
+          if (optTxt === valorStr) {
+            opt.selected = true;
+            encontrado = true;
+            console.log(`  ✅ Match exacto: opt.index=${opt.index} opt.value="${opt.value}" opt.text="${opt.text}"`);
+            break;
+          }
+        }
+
+        // Intento 2: match parcial — el texto de la opcion contiene el valor o viceversa
+        if (!encontrado) {
+          for (let opt of campo.options) {
+            if (opt.value === '') continue;
+            const optTxt = normDash(opt.text.trim().toLowerCase());
+            if (optTxt.includes(valorStr) || valorStr.includes(optTxt)) {
+              opt.selected = true;
+              encontrado = true;
+              console.log(`  ✅ Match parcial: opt.index=${opt.index} opt.value="${opt.value}" opt.text="${opt.text}"`);
+              break;
+            }
+          }
+        }
+
+        // Intento 3: match por value directo (la IA retorno el valor numerico de puntos)
+        if (!encontrado) {
+          for (let opt of campo.options) {
+            if (opt.value === String(valor)) {
+              opt.selected = true;
+              encontrado = true;
+              console.log(`  ✅ Match por value: opt.index=${opt.index} opt.value="${opt.value}" opt.text="${opt.text}"`);
+              break;
+            }
+          }
+        }
+
+        // Intento 4: si la IA retorno un numero entero (1,2,3...),
+        // usarlo como posicion (saltando el "-- Seleccione --")
+        if (!encontrado && Number.isInteger(valorNum) && valorNum > 0) {
+          const opcionesReales = Array.from(campo.options)
+                                     .filter(o => o.value !== '');
+          const opcion = opcionesReales[valorNum - 1];
+          if (opcion) {
+            opcion.selected = true;
+            encontrado = true;
+            console.log(`  ✅ Match por posicion ${valorNum}: opt.index=${opcion.index} opt.value="${opcion.value}" opt.text="${opcion.text}"`);
+          }
+        }
+
+        if (!encontrado) {
+          console.warn(`  ❌ Select "${codigo}": sin match para "${valor}"`);
+        }
+      } else if (campo.type === 'checkbox') {
+        campo.checked = Boolean(valor);
+      } else {
+        campo.value = valor;
+      }
+      campo.classList.add('border-success');
+      campo.title = 'Pre-llenado por IA - puedes editar';
+      campo.dispatchEvent(new Event('change', { bubbles: true }));
+      contadorLlenados++;
+      console.log(`Pre-llenado: ${codigo} = ${valor}`);
+    } else {
+      console.warn(`Campo no encontrado para codigo: ${codigo}`);
+    }
+  });
+  console.log(`Total campos pre-llenados: ${contadorLlenados}`);
+
+  // Auto-seleccionar "Sin dato PILA" si no se subio planilla PILA
+  const selectPila = document.querySelector('[name="criterio_1774566779608"]');
+  if (selectPila && selectPila.value === '') {
+    for (let opt of selectPila.options) {
+      if (opt.text.trim() === 'Sin dato PILA para comparar') {
+        opt.selected = true;
+        selectPila.classList.add('border-success');
+        selectPila.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('Auto-seleccionado: Coherencia IBC vs Salario → Sin dato PILA para comparar');
+        break;
+      }
+    }
+  }
+
+  return contadorLlenados;
+}
+
+function verDetalleExtraccion() {
+  const resumen = datosExtraidos._resumen || {};
+  let msg = 'Detalle de extraccion:\n\n';
+  Object.entries(resumen).forEach(([fuente, info]) => {
+    msg += `${fuente}: ${info.criterios} criterios, confianza ${info.confianza}\n`;
+  });
+  if (datosExtraidos._alertas && datosExtraidos._alertas.length) {
+    msg += '\nAlertas:\n' + datosExtraidos._alertas.join('\n');
+  }
+  // Mostrar campos extraidos
+  msg += '\nCampos extraidos:\n';
+  Object.entries(datosExtraidos).forEach(([k, v]) => {
+    if (!k.startsWith('_') && v !== null) {
+      msg += `  ${k}: ${v}\n`;
+    }
+  });
+  alert(msg);
+}
+
+function mostrarAlertasFraudePDF(datos) {
+  const contenedor = document.getElementById('alertaFraudeMetadatos');
+  if (!contenedor) return;
+  let html = '';
+  let hayAlertaAlta = false;
+  let hayAlertaMedia = false;
+
+  Object.entries(datos).forEach(([clave, valor]) => {
+    if (!clave.startsWith('_fraude_metadatos_')) return;
+    if (!valor || typeof valor !== 'object') return;
+
+    const fuente = clave.replace('_fraude_metadatos_', '');
+    const riesgo = valor.riesgo || 'bajo';
+    const alertas = valor.alertas || [];
+    const detalle = valor.detalle || '';
+
+    if (riesgo === 'bajo') return;
+
+    if (riesgo === 'alto') hayAlertaAlta = true;
+    if (riesgo === 'medio') hayAlertaMedia = true;
+
+    const labelFuente = obtenerLabelFuente(fuente);
+
+    // Caso especial: sin metadatos = documento escaneado, no es fraude
+    const esSinMetadatos = alertas.some(a => a.toLowerCase().includes('sin metadatos'));
+
+    let alertClass, icono, titulo;
+    if (riesgo === 'alto') {
+      alertClass = 'alert-danger';
+      icono = 'bi-shield-exclamation';
+      titulo = 'ALERTA DE FRAUDE';
+    } else if (esSinMetadatos) {
+      alertClass = 'alert-info';
+      icono = 'bi-info-circle';
+      titulo = 'Sin metadatos';
+    } else {
+      alertClass = 'alert-warning';
+      icono = 'bi-exclamation-triangle';
+      titulo = 'Metadatos sospechosos';
+    }
+
+    html += `<div class="alert ${alertClass} mb-2 py-2">`;
+    html += `<i class="bi ${icono} me-2"></i>`;
+    if (esSinMetadatos && riesgo !== 'alto') {
+      html += `<strong>${titulo}:</strong> ${labelFuente} — `;
+      html += `Documento escaneado o sin firma digital. Verificar visualmente.`;
+    } else {
+      html += `<strong>${titulo}:</strong> ${labelFuente}`;
+      if (alertas.length > 0) {
+        html += '<ul class="mb-0 mt-1 small">';
+        alertas.forEach(a => { html += '<li>' + a + '</li>'; });
+        html += '</ul>';
+      }
+    }
+    if (valor.creator) html += `<small class="text-muted d-block">Creator: ${valor.creator}</small>`;
+    if (valor.producer) html += `<small class="text-muted d-block">Producer: ${valor.producer}</small>`;
+    if (valor.eof_count > 1) html += `<small class="text-muted d-block">Marcadores EOF: ${valor.eof_count}</small>`;
+    html += '</div>';
+  });
+
+  if (html) {
+    contenedor.innerHTML = html;
+    contenedor.style.display = 'block';
+    if (hayAlertaAlta) {
+      console.warn('ALERTA FRAUDE: Documento con riesgo ALTO detectado');
+    }
+  } else {
+    contenedor.style.display = 'none';
+    contenedor.innerHTML = '';
+  }
+}
+
+// ── renderFileList — lista compacta de archivos ─────────────────────────
+function renderFileList(inputEl, containerEl, addMoreLabel, fuente) {
+  containerEl.innerHTML = '';
+  const files = inputEl.files;
+
+  // Sincronizar a documentosParaEnviar si se proporcionó fuente
+  if (fuente) {
+    Object.keys(documentosParaEnviar).forEach(k => {
+      if (k === fuente || new RegExp('^' + fuente + '_\\d+$').test(k)) {
+        delete documentosParaEnviar[k];
+      }
+    });
+    Array.from(files || []).forEach((f, i) => {
+      documentosParaEnviar[i === 0 ? fuente : fuente + '_' + i] = f;
+    });
+    // Actualizar borde de la zona
+    const zona = document.getElementById('zona_' + fuente);
+    if (zona) {
+      if (files && files.length > 0) {
+        zona.classList.add('border-success');
+        zona.classList.remove('border-dashed');
+      } else {
+        zona.classList.remove('border-success');
+        zona.classList.add('border-dashed');
+      }
+    }
+  }
+
+  if (!files || files.length === 0) {
+    containerEl.innerHTML = '<div class="upload-drop-zone" onclick="document.getElementById(\'' + inputEl.id + '\').click()">' +
+      '<div class="dz-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v8M5 8l3-3 3 3"/><path d="M3 12h10"/></svg></div>' +
+      '<span class="dz-text"><strong>Seleccionar archivo</strong> o arrastra aqui</span></div>';
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'file-list-compact';
+
+  Array.from(files).forEach((file, idx) => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isImg = ['jpg','jpeg','png','gif','webp','heic'].includes(ext);
+    const kb = Math.round(file.size / 1024);
+    const sizeStr = kb >= 1024 ? (kb/1024).toFixed(1) + ' MB' : kb + ' KB';
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML = '<div class="fi-icon ' + (isImg ? 'img' : 'pdf') + '">' + (isImg ? 'IMG' : 'PDF') + '</div>' +
+      '<span class="fi-name" title="' + file.name + '">' + file.name + '</span>' +
+      '<span class="fi-meta">' + sizeStr + ' <span class="fi-ok">&#10003;</span></span>' +
+      '<button class="fi-remove" title="Eliminar" data-idx="' + idx + '">&#x2715;</button>';
+    list.appendChild(row);
+  });
+  containerEl.appendChild(list);
+
+  if (addMoreLabel) {
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn-add-more';
+    addBtn.textContent = addMoreLabel;
+    addBtn.onclick = function() {
+      const tmp = document.createElement('input');
+      tmp.type = 'file';
+      tmp.accept = inputEl.accept || '';
+      tmp.onchange = function() {
+        const dt = new DataTransfer();
+        Array.from(inputEl.files).forEach(function(f) { dt.items.add(f); });
+        Array.from(tmp.files).forEach(function(f) { dt.items.add(f); });
+        inputEl.files = dt.files;
+        renderFileList(inputEl, containerEl, addMoreLabel, fuente);
+      };
+      tmp.click();
+    };
+    containerEl.appendChild(addBtn);
+  }
+
+  list.querySelectorAll('.fi-remove').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const idxToRemove = parseInt(btn.dataset.idx);
+      const dt = new DataTransfer();
+      Array.from(inputEl.files).forEach(function(f, i) {
+        if (i !== idxToRemove) dt.items.add(f);
+      });
+      inputEl.files = dt.files;
+      renderFileList(inputEl, containerEl, addMoreLabel, fuente);
+    });
+  });
+}
+
+function initCompactFileInputs() {
+  var configs = [
+    { inputId: 'file_cedula_completa',              containerId: 'fc_cedula_completa',       fuente: 'cedula_completa',              label: null },
+    { inputId: 'file_midecisor_pdf',                containerId: 'fc_midecisor_pdf',          fuente: 'midecisor_pdf',                label: null },
+    { inputId: 'file_soporte_ingresos',             containerId: 'fc_soporte_ingresos',       fuente: 'soporte_ingresos',             label: 'Agregar otro mes' },
+    { inputId: 'file_extracto_bancario',            containerId: 'fc_extracto_bancario',      fuente: 'extracto_bancario',            label: 'Agregar otro mes' },
+    { inputId: 'file_recibo_servicios',             containerId: 'fc_recibo_servicios',       fuente: 'recibo_servicios',             label: null },
+    { inputId: 'file_certificado_seguridad_social', containerId: 'fc_certificado_seguridad_social', fuente: 'certificado_seguridad_social', label: 'Agregar otro documento' },
+    { inputId: 'file_planilla_pila',                containerId: 'fc_planilla_pila',          fuente: 'planilla_pila',                label: null },
+  ];
+  configs.forEach(function(cfg) {
+    var input = document.getElementById(cfg.inputId);
+    var container = document.getElementById(cfg.containerId);
+    if (!input || !container) return;
+    renderFileList(input, container, cfg.label, cfg.fuente);
+    input.addEventListener('change', function() {
+      renderFileList(input, container, cfg.label, cfg.fuente);
+    });
+  });
+}
+
+// ── Etapas del análisis para el botón ─────────────────────────────────
+var IA_STEPS = [
+  { text: 'Leyendo documentos...',          progress: 10 },
+  { text: 'Extrayendo datos de cedula...',  progress: 22 },
+  { text: 'Procesando MiDecisor...',        progress: 36 },
+  { text: 'Analizando nomina (3 meses)...', progress: 50 },
+  { text: 'Validando extracto bancario...', progress: 64 },
+  { text: 'Cruzando fuentes...',            progress: 78 },
+  { text: 'Detectando inconsistencias...',  progress: 88 },
+  { text: 'Pre-llenando formulario...',     progress: 95 },
+];
+var _iaStepTimer = null;
+var _iaStepIdx   = 0;
+
+function iaBotonInicio() {
+  var btn = document.getElementById('btn-analizar-ia');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.classList.add('ia-loading');
+  btn.classList.remove('ia-success');
+  _iaStepIdx = 0;
+  _iaAvanzarPaso();
+}
+
+function _iaAvanzarPaso() {
+  var btn = document.getElementById('btn-analizar-ia');
+  if (!btn || !btn.classList.contains('ia-loading')) return;
+  if (_iaStepIdx < IA_STEPS.length) {
+    var step = IA_STEPS[_iaStepIdx];
+    var stepEl = btn.querySelector('.ia-step-text');
+    var progEl = btn.querySelector('.ia-progress');
+    if (stepEl) stepEl.textContent = step.text;
+    if (progEl) progEl.style.width = step.progress + '%';
+    _iaStepIdx++;
+    _iaStepTimer = setTimeout(_iaAvanzarPaso, 750);
+  }
+}
+
+function iaBotonExito(nCampos) {
+  clearTimeout(_iaStepTimer);
+  var btn = document.getElementById('btn-analizar-ia');
+  if (!btn) return;
+  var progEl = btn.querySelector('.ia-progress');
+  var doneTextEl = btn.querySelector('.ia-done-text');
+  if (progEl) progEl.style.width = '100%';
+  if (doneTextEl) doneTextEl.textContent = (nCampos || '0') + ' campos pre-llenados';
+  btn.classList.remove('ia-loading');
+  btn.classList.add('ia-success');
+}
+
+function iaBotonError() {
+  clearTimeout(_iaStepTimer);
+  var btn = document.getElementById('btn-analizar-ia');
+  if (!btn) return;
+  btn.classList.remove('ia-loading', 'ia-success');
+  btn.disabled = false;
+  var progEl = btn.querySelector('.ia-progress');
+  if (progEl) progEl.style.width = '0%';
+}
+
+// =============================================
+// PANEL PSICOMÉTRICO — Buscar test por cédula
+// =============================================
+var _psicoBuscando = false;
+function buscarTestPsicometrico(cedula) {
+    if (!cedula || cedula.length < 5 || _psicoBuscando) return;
+    _psicoBuscando = true;
+    var panel = document.getElementById('panelPsicometrico');
+    if (!panel) return;
+    panel.style.display = 'block';
+    document.getElementById('psico_loading').style.display = 'block';
+    document.getElementById('psico_resultado').style.display = 'none';
+    document.getElementById('psico_no_test').style.display = 'none';
+
+    fetch('/psicometrico/api/por-cedula/' + encodeURIComponent(cedula))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _psicoBuscando = false;
+            document.getElementById('psico_loading').style.display = 'none';
+            if (data.encontrado) {
+                document.getElementById('psico_resultado').style.display = 'block';
+                document.getElementById('psico_score').textContent = data.score_total != null ? data.score_total.toFixed(1) : '-';
+                document.getElementById('psico_a').textContent = data.score_bloque_a != null ? data.score_bloque_a.toFixed(0) : '-';
+                document.getElementById('psico_b').textContent = data.score_bloque_b != null ? data.score_bloque_b.toFixed(0) : '-';
+                document.getElementById('psico_c').textContent = data.score_bloque_c != null ? data.score_bloque_c.toFixed(0) : '-';
+                document.getElementById('psico_d').textContent = data.score_bloque_d != null ? data.score_bloque_d.toFixed(0) : '-';
+                document.getElementById('psico_e').textContent = data.score_bloque_e != null ? data.score_bloque_e.toFixed(0) : '-';
+
+                // Color del score
+                var scoreEl = document.getElementById('psico_score');
+                scoreEl.className = 'fs-2 fw-bold';
+                if (data.score_total >= 70) scoreEl.classList.add('text-success');
+                else if (data.score_total >= 50) scoreEl.classList.add('text-warning');
+                else scoreEl.classList.add('text-danger');
+
+                // Badge de estado
+                var badge = document.getElementById('psico_estado_badge');
+                badge.textContent = (data.estado_validacion || '-').toUpperCase();
+                badge.className = 'badge';
+                if (data.estado_validacion === 'valido') badge.classList.add('bg-success');
+                else if (data.estado_validacion === 'sospechoso') badge.classList.add('bg-warning', 'text-dark');
+                else badge.classList.add('bg-danger');
+
+                // Flags
+                var flagsHtml = '';
+                if (data.flags && data.flags.length > 0) {
+                    flagsHtml = '<div class="mt-2">';
+                    data.flags.forEach(function(f) {
+                        flagsHtml += '<span class="badge bg-danger me-1">' + f + '</span>';
+                    });
+                    flagsHtml += '</div>';
+                }
+                document.getElementById('psico_flags').innerHTML = flagsHtml;
+
+                // Link detalle
+                if (data.token) {
+                    document.getElementById('psico_detalle_link').href = '/psicometrico/admin/detalle/' + data.token;
+                }
+            } else {
+                document.getElementById('psico_no_test').style.display = 'block';
+            }
+        })
+        .catch(function(err) {
+            _psicoBuscando = false;
+            document.getElementById('psico_loading').style.display = 'none';
+            document.getElementById('psico_no_test').style.display = 'block';
+            console.error('Error buscando test psicométrico:', err);
+        });
+}
+
+function generarLinkPsicometrico() {
+    var cedula = (document.getElementById('nombre_cliente_cedula') || {}).value || '';
+    var nombre = (document.getElementById('nombre_cliente_nombre') || {}).value || '';
+    var url = window.location.origin + '/psicometrico/iniciar?canal=asesor';
+    if (cedula) url += '&cedula=' + encodeURIComponent(cedula);
+    if (nombre) url += '&nombre=' + encodeURIComponent(nombre);
+    document.getElementById('psico_link_input').value = url;
+    document.getElementById('psico_link_generado').style.display = 'block';
+}
+
+// Escuchar cambios en el campo cédula para buscar test automáticamente
+document.addEventListener('DOMContentLoaded', function() {
+    var cedulaInput = document.getElementById('nombre_cliente_cedula');
+    if (cedulaInput) {
+        var _psicoTimer = null;
+        cedulaInput.addEventListener('input', function() {
+            clearTimeout(_psicoTimer);
+            var val = this.value.trim();
+            _psicoTimer = setTimeout(function() {
+                buscarTestPsicometrico(val);
+            }, 800);
+        });
+        // Si ya tiene valor al cargar (ej: después de calcular scoring)
+        if (cedulaInput.value && cedulaInput.value.trim().length >= 5) {
+            buscarTestPsicometrico(cedulaInput.value.trim());
+        }
+    }
+});
+</script>
+
+</body>
+</html>

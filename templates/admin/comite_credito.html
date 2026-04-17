@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comité de Crédito - Loansi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+</head>
+
+<body>
+    {% include 'partials/navbar_asesor.html' %}
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Header -->
+            <div class="col-12 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2><i class="bi bi-people-fill me-2"></i>Comité de Crédito</h2>
+                    <div class="d-flex gap-2">
+                        {% if tiene_permiso('cfg_comite_ver') %}
+                        <a href="{{ url_for('comite.comite_config_page') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-sliders me-1"></i>Configuración por Línea
+                        </a>
+                        {% endif %}
+                        {% set rol = session.get('rol', '') %}
+                        {% set inicio_url = '/admin' if rol == 'admin' or (rol == 'admin_tecnico' and
+                        tiene_permiso('admin_panel_acceso')) else '/dashboard' %}
+                        <button class="btn btn-outline-secondary" onclick="window.location.href='{{ inicio_url }}'">
+                            <i class="bi bi-arrow-left me-1"></i>Volver al Inicio
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="col-md-4 mb-4">
+                <div class="card bg-warning-subtle border-warning">
+                    <div class="card-body text-center">
+                        <h1 class="display-4 fw-bold text-warning">{{ stats.pendientes }}</h1>
+                        <p class="mb-0"><i class="bi bi-clock-history me-1"></i>Casos Pendientes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card bg-danger-subtle border-danger">
+                    <div class="card-body text-center">
+                        <h1 class="display-4 fw-bold text-danger">{{ stats.con_alerta }}</h1>
+                        <p class="mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Con Alerta (>24h)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card bg-info-subtle border-info">
+                    <div class="card-body text-center">
+                        <h1 class="display-4 fw-bold text-info">{{ stats.decisiones_hoy }}</h1>
+                        <p class="mb-0"><i class="bi bi-check2-circle me-1"></i>Decisiones Hoy</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="col-12">
+                <ul class="nav nav-tabs mb-4" id="comiteTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pendientes-tab" data-bs-toggle="tab"
+                            data-bs-target="#pendientes" type="button">
+                            <i class="bi bi-clock-history me-1"></i>Pendientes
+                            {% if stats.pendientes > 0 %}
+                            <span class="badge"
+                                style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: #000;">
+                                {{ stats.pendientes }}
+                            </span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="decisiones-tab" data-bs-toggle="tab" data-bs-target="#decisiones"
+                            type="button">
+                            <i class="bi bi-check2-all me-1"></i>Decisiones Recientes
+                        </button>
+                    </li>
+                    {% if puede_ver_config %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="configuracion-tab" data-bs-toggle="tab"
+                            data-bs-target="#configuracion" type="button">
+                            <i class="bi bi-gear me-1"></i>Configuración
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="comiteTabContent">
+                    <!-- Tab Pendientes -->
+                    <div class="tab-pane fade show active" id="pendientes" role="tabpanel">
+                        {% if casos_pendientes|length == 0 %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <strong>¡Excelente!</strong> No hay casos pendientes de decisión.
+                        </div>
+                        {% else %}
+                        <div class="row">
+                            {% for caso in casos_pendientes %}
+                            <div class="col-md-6 mb-4">
+                                <div
+                                    class="card {% if caso.alerta_tiempo %}border-danger{% else %}border-warning{% endif %}">
+                                    <div
+                                        class="card-header {% if caso.alerta_tiempo %}bg-danger text-white{% else %}bg-warning{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <i class="bi bi-person-fill me-1"></i>{{ caso.cliente }}
+                                                {% if caso.total_alertas and caso.total_alertas > 0 %}
+                                                <span class="badge {% if caso.total_alertas >= 3 %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-1" 
+                                                      title="{{ caso.total_alertas }} alerta(s) activa(s)">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> {{ caso.total_alertas }}
+                                                </span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="badge bg-dark">{{ caso.tiempo_espera_horas }}h esperando</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <small class="text-muted">Asesor:</small><br>
+                                                <strong>{{ caso.asesor }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Fecha:</small><br>
+                                                <strong>{{ caso.timestamp | formatear_fecha }}</strong>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-4">
+                                                <small class="text-muted">Score:</small><br>
+                                                <h4 class="mb-0 text-primary">{{ caso.resultado.score }}</h4>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">DataCrédito:</small><br>
+                                                <h4 class="mb-0">{% if caso.datacredito or caso.puntaje_datacredito %}{{ (caso.datacredito or caso.puntaje_datacredito)|int }}{% else %}N/A{% endif %}</h4>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">Nivel:</small><br>
+                                                <span class="badge"
+                                                    style="background-color: {{ caso.resultado.get('color', '#6c757d') }}; font-size: 0.9rem;">{{
+                                                    caso.resultado.nivel }}</span>
+                                            </div>
+                                        </div>
+
+                                        {% if caso.monto_solicitado %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <small class="text-muted">Monto Solicitado:</small><br>
+                                                <h5 class="mb-0 text-success">${{
+                                                    "{:,.0f}".format(caso.monto_solicitado).replace(",", ".") }}</h5>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="alert alert-info mb-3">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <strong>Requiere comité:</strong><br>
+                                            <small>{{ caso.get('razon_comite', 'Sin información') }}</small>
+                                        </div>
+
+                                        <div class="alert alert-warning mb-3"
+                                            style="background-color: rgba(255, 193, 7, 0.1);">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                            <strong>Acción requerida:</strong><br>
+                                            <small>El asesor debe enviar el reporte de DataCrédito del cliente al
+                                                administrador para su evaluación manual.</small>
+                                        </div>
+
+                                        <div class="d-flex gap-2 mb-2">
+                                            <button class="btn btn-info btn-sm flex-fill"
+                                                onclick="verDetalle('{{ caso.timestamp }}')">
+                                                <i class="bi bi-eye me-1"></i>VER DETALLE
+                                            </button>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            {% if puede_aprobar %}
+                                            <button class="btn btn-success flex-fill"
+                                                onclick="abrirModalParaAprobar('{{ caso.timestamp }}')">
+                                                <i class="bi bi-check-circle me-1"></i>APROBAR
+                                            </button>
+                                            {% endif %}
+                                            {% if puede_rechazar %}
+                                            <button class="btn btn-danger flex-fill"
+                                                onclick="mostrarModalRechazo('{{ caso.timestamp }}', '{{ caso.cliente }}')">
+                                                <i class="bi bi-x-circle me-1"></i>RECHAZAR
+                                            </button>
+                                            {% endif %}
+                                            {% if not puede_aprobar and not puede_rechazar %}
+                                            <span class="text-muted"><i class="bi bi-eye me-1"></i>Solo lectura</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tab Decisiones Recientes -->
+                    <div class="tab-pane fade" id="decisiones" role="tabpanel">
+                        <!-- Filtros -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <!-- Filtros por fecha -->
+                                <div class="mb-3">
+                                    <h6 class="card-title mb-3">
+                                        <i class="bi bi-funnel me-2"></i>Filtrar por Rango de Fechas
+                                    </h6>
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-3">
+                                            <label for="fechaDesdeDecisiones" class="form-label small">Desde</label>
+                                            <input type="date" class="form-control form-control-sm"
+                                                id="fechaDesdeDecisiones">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="fechaHastaDecisiones" class="form-label small">Hasta</label>
+                                            <input type="date" class="form-control form-control-sm"
+                                                id="fechaHastaDecisiones">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button onclick="aplicarFiltroFechasDecisiones()"
+                                                class="btn btn-sm btn-primary me-2">
+                                                <i class="bi bi-filter"></i> Filtrar
+                                            </button>
+                                            <button onclick="limpiarFiltroFechasDecisiones()"
+                                                class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-x-circle"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Alert de filtro activo -->
+                                    <div id="alertFiltroActivoDecisiones" class="alert alert-info alert-sm mt-2"
+                                        style="display: none; padding: 0.5rem;">
+                                        <small><i class="bi bi-info-circle me-1"></i><span
+                                                id="mensajeFiltroDecisiones"></span></small>
+                                    </div>
+                                </div>
+
+                                <!-- Botones de filtro por estado -->
+                                <div class="d-flex flex-wrap gap-2" id="filtrosDecisiones">
+                                    <button class="btn btn-sm btn-primary active" data-filter-decision="todos">
+                                        Todos
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" data-filter-decision="aprobados">
+                                        <i class="bi bi-check-circle me-1"></i>Aprobados
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" data-filter-decision="rechazados">
+                                        <i class="bi bi-x-circle me-1"></i>Rechazados
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if decisiones_recientes|length == 0 %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No hay decisiones recientes.
+                        </div>
+                        {% else %}
+                        <div class="card border-0 shadow-sm">
+                            <!-- Paginación superior -->
+                            <div class="card-header bg-white">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                    <div>
+                                        <label for="itemsPerPageDecisiones" class="me-2">Mostrar:</label>
+                                        <select id="itemsPerPageDecisiones"
+                                            class="form-select form-select-sm d-inline-block w-auto">
+                                            <option value="10">10</option>
+                                            <option value="20" selected>20</option>
+                                            <option value="30">30</option>
+                                            <option value="999999">Todos</option>
+                                        </select>
+                                        <span class="ms-2 text-muted" id="paginationInfoDecisiones"></span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary" id="btnPrevDecisiones" disabled>
+                                            <i class="bi bi-chevron-left"></i> Anterior
+                                        </button>
+                                        <span class="mx-2" id="pageInfoDecisiones">Página 1</span>
+                                        <button class="btn btn-sm btn-outline-primary" id="btnNextDecisiones">
+                                            Siguiente <i class="bi bi-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0" id="tablaDecisiones">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th class="d-none d-md-table-cell">Asesor</th>
+                                                <th class="text-center">Score</th>
+                                                <th class="text-center">Decisión</th>
+                                                <th class="d-none d-lg-table-cell">Admin</th>
+                                                <th class="d-none d-lg-table-cell">Fecha</th>
+                                                <th class="text-center">Ver Detalle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for decision in decisiones_recientes %}
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-person me-1"></i>{{ decision.cliente }}
+                                                    <br class="d-md-none">
+                                                    <small class="text-muted d-md-none">{{ decision.asesor }}</small>
+                                                </td>
+                                                <td class="d-none d-md-table-cell">{{ decision.asesor }}</td>
+                                                <td class="text-center"><span class="badge bg-primary">{{
+                                                        decision.resultado.score }}</span></td>
+                                                <td class="text-center">
+                                                    {% if decision.estado_comite == 'approved' %}
+                                                    <span class="badge bg-success"><i
+                                                            class="bi bi-check-circle me-1"></i>Aprobado</span>
+                                                    {% elif decision.estado_comite == 'rejected' %}
+                                                    <span class="badge bg-danger"><i
+                                                            class="bi bi-x-circle me-1"></i>Rechazado</span>
+                                                    {% endif %}
+                                                    <br class="d-lg-none">
+                                                    <small class="text-muted d-lg-none">
+                                                        {% if decision.decision_admin %}
+                                                        {{ decision.decision_admin.admin }}<br>
+                                                        {{ decision.decision_admin.timestamp[:10] }}
+                                                        {% endif %}
+                                                    </small>
+                                                </td>
+                                                <td class="d-none d-lg-table-cell">
+                                                    {% if decision.decision_admin %}
+                                                    {{ decision.decision_admin.admin }}
+                                                    {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="d-none d-lg-table-cell">
+                                                    {% if decision.decision_admin %}
+                                                    {{ decision.decision_admin.timestamp[:16] | replace('T', ' ') }}
+                                                    {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-outline-primary"
+                                                        onclick="verDetalleDecision('{{ decision.timestamp }}')"
+                                                        title="Ver detalle de decisión">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tab Configuración - Solo visible si tiene permiso -->
+                    {% if puede_ver_config %}
+                    <div class="tab-pane fade" id="configuracion" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-gear me-2"></i>Configuración del Comité de Crédito</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="formConfigComite">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Score Mínimo</label>
+                                            <input type="number" class="form-control" id="score_minimo"
+                                                name="score_minimo" value="{{ comite_config.score_minimo }}" min="0"
+                                                max="100" step="0.1">
+                                            <small class="text-muted">Casos con score igual o superior a este valor
+                                                pueden ir a comité</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Score Máximo</label>
+                                            <input type="number" class="form-control" id="score_maximo"
+                                                name="score_maximo" value="{{ comite_config.score_maximo }}" min="0"
+                                                max="100" step="0.1">
+                                            <small class="text-muted">Casos con score hasta este valor pueden ir a
+                                                comité</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">DataCrédito Máximo</label>
+                                            <input type="number" class="form-control" id="datacredito_maximo"
+                                                name="datacredito_maximo" value="{{ comite_config.datacredito_maximo }}"
+                                                min="0" max="999">
+                                            <small class="text-muted">Casos con DataCrédito por debajo de este valor
+                                                requieren revisión</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox"
+                                                    id="evaluar_comportamiento_interno"
+                                                    name="evaluar_comportamiento_interno" value="true" {% if
+                                                    comite_config.evaluar_comportamiento_interno %}checked{% endif %}>
+                                                <label class="form-check-label" for="evaluar_comportamiento_interno">
+                                                    <strong>Evaluar Comportamiento Interno</strong><br>
+                                                    <small class="text-muted">Considerar criterios de comportamiento
+                                                        interno para casos borderline</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr>
+
+                                    <h6 class="mb-3">Criterios de Comportamiento Interno (Mínimos Requeridos)</h6>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cupo Total Mínimo</label>
+                                            <input type="text" class="form-control" id="cupo_total_minimo"
+                                                name="cupo_total_minimo"
+                                                value="{{ comite_config.criterios_comportamiento.cupo_total_minimo }}"
+                                                data-tipo="currency" oninput="formatearMontoInput(this)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Historial Pagos Mínimo (meses)</label>
+                                            <input type="number" class="form-control" id="historial_pagos_minimo"
+                                                name="historial_pagos_minimo"
+                                                value="{{ comite_config.criterios_comportamiento.historial_pagos_minimo }}"
+                                                min="0" max="12">
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Mora Reciente Máxima (días)</label>
+                                            <input type="number" class="form-control" id="mora_reciente_maxima"
+                                                name="mora_reciente_maxima"
+                                                value="{{ comite_config.criterios_comportamiento.mora_reciente_maxima }}"
+                                                min="0" max="365">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Créditos Vigentes Mínimos</label>
+                                            <input type="number" class="form-control" id="creditos_vigentes_minimos"
+                                                name="creditos_vigentes_minimos"
+                                                value="{{ comite_config.criterios_comportamiento.creditos_vigentes_minimos }}"
+                                                min="0" max="10">
+                                        </div>
+                                        {% endif %}{# fin puede_ver_config #}
+                                    </div>
+
+                                    {% if puede_editar_config %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-1"></i>Guardar Configuración
+                                    </button>
+                                    {% else %}
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Solo tienes permiso de visualización. Contacta al administrador para realizar
+                                        cambios.
+                                    </div>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Detalle -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>Detalle Completo de Evaluación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleBody">
+                    <!-- Contenido dinámico generado por JavaScript -->
+                </div>
+                <!-- NUEVA SECCIÓN: Modificaciones de Aprobación (FASE 3B) -->
+                <div class="card border-warning mb-3 mt-3" id="seccion-modificaciones-aprobacion"
+                    style="display: none;">
+                    <div class="card-header bg-warning text-dark d-flex align-items-center">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        <strong>Modificaciones de Aprobación</strong>
+                    </div>
+                    <div class="card-body">
+                        <!-- Monto a Aprobar -->
+                        <div class="mb-3">
+                            <label for="monto_aprobado_input" class="form-label">
+                                <i class="bi bi-currency-dollar"></i> Monto a Aprobar
+                            </label>
+                            <input type="text" class="form-control" id="monto_aprobado_input"
+                                placeholder="Ingrese monto a aprobar (ej: 1500000)" oninput="formatearMontoInput(this)">
+                            <div class="form-text">
+                                Monto solicitado: <strong id="monto_solicitado_display">$0</strong>
+                                <br><small class="text-muted">Puede aprobar cualquier monto igual o menor al solicitado.
+                                    Dejar vacío para aprobar el monto completo.</small>
+                            </div>
+                        </div>
+
+                        <!-- Ajuste de Nivel de Riesgo -->
+                        <div class="mb-3">
+                            <label for="nivel_riesgo_select" class="form-label">
+                                <i class="bi bi-shield-exclamation"></i> Ajuste de Nivel de Riesgo
+                            </label>
+                            <select class="form-select" id="nivel_riesgo_select">
+                                <option value="sin_cambio" selected>Sin cambio (usar nivel calculado)</option>
+                                <!-- Opciones se llenan dinámicamente según nivel actual -->
+                            </select>
+                            <div class="form-text">
+                                Nivel calculado por el sistema: <strong id="nivel_calculado_display">-</strong>
+                                <br><small class="text-muted">Solo puede degradar el nivel (aumentar precaución), nunca
+                                    mejorarlo.</small>
+                            </div>
+                        </div>
+
+                        <!-- Justificación de Modificación -->
+                        <div class="mb-3">
+                            <label for="justificacion_textarea" class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Justificación de Modificación
+                            </label>
+                            <textarea class="form-control" id="justificacion_textarea" rows="3"
+                                placeholder="Explique por qué modifica el monto o nivel de riesgo (opcional pero recomendado)"></textarea>
+                            <div class="form-text">
+                                <small class="text-muted">Recomendado si realiza modificaciones. Quedará registrado en
+                                    el historial.</small>
+                            </div>
+                        </div>
+
+                        <!-- Alerta informativa -->
+                        <div class="alert alert-info d-flex align-items-center mb-0" style="font-size: 0.9rem;">
+                            <i class="bi bi-info-circle me-2" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <strong>Nota:</strong> Estas modificaciones solo se aplican si aprueba el caso.
+                                Si rechaza, estas configuraciones se ignoran.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones del modal -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="btn-guardar-modificaciones"
+                        onclick="guardarModificaciones()">
+                        <i class="bi bi-check-circle-fill"></i> Aprobar con Modificaciones
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-rechazar-desde-modal"
+                        onclick="rechazarDesdeModal()" style="display: none;">
+                        <i class="bi bi-x-circle-fill"></i> Rechazar Crédito
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-success btn-lg" onclick="aprobarCaso(timestampActual)"
+                        style="display: none;" id="btn-aprobar-desde-modal">
+                        <i class="bi bi-check-circle"></i> APROBAR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Rechazar -->
+    <div class="modal fade" id="modalRechazo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Rechazar Caso</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro de rechazar el caso de <strong id="clienteRechazo"></strong>?</p>
+                    <div class="mb-3">
+                        <label for="motivoRechazo" class="form-label">Motivo del rechazo:</label>
+                        <textarea class="form-control" id="motivoRechazo" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarRechazo">
+                        <i class="bi bi-x-circle me-1"></i>Rechazar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/theme-unified.js') }}"></script>
+
+    <script>
+        let timestampActual = '';
+
+        // Ver detalle de evaluación
+        async function verDetalle(timestamp) {
+            // Guardar timestamp globalmente para aprobar/rechazar
+            timestampActual = timestamp;
+
+            try {
+                const response = await fetch(`/api/detalle_evaluacion/${timestamp}`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.evaluacion) {
+                    const modalBody = document.getElementById('modalDetalleBody');
+                    modalBody.innerHTML = generarHTMLDetalle(data.evaluacion);
+
+                    const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+                    modal.show();
+                } else {
+                    alert('Error al cargar el detalle: ' + (data.error || 'Respuesta inválida'));
+                }
+
+                // FASE 3B: Poblar campos de modificación
+                console.log('🔧 FASE 3B: Poblando campos de modificación');
+
+                // Poblar monto solicitado (CORREGIDO - usar data.evaluacion)
+                const montoSolicitado = data.evaluacion.monto_solicitado || 0;
+                document.getElementById('monto_solicitado_display').textContent = formatearMonto(montoSolicitado);
+                document.getElementById('monto_aprobado_input').value = ''; // Limpiar input
+                document.getElementById('monto_aprobado_input').placeholder = `Ingrese monto (máximo ${formatearMonto(montoSolicitado)})`;
+
+                // Poblar nivel de riesgo calculado - USAR NIVEL NORMALIZADO si N/A (FASE 3B)
+                let nivelCalculado = data.evaluacion.nivel_riesgo;
+
+                // Si es N/A, intentar usar el nivel normalizado del scoring
+                if (!nivelCalculado || nivelCalculado === 'N/A') {
+                    const nivelNormalizado = data.evaluacion.nivel_normalizado;
+                    console.log('🔧 FASE 3B: Nivel riesgo es N/A, usando nivel normalizado:', nivelNormalizado);
+
+                    // Mapear nivel normalizado a texto legible
+                    if (nivelNormalizado) {
+                        if (nivelNormalizado.toLowerCase().includes('bajo')) {
+                            nivelCalculado = 'Riesgo bajo';
+                        } else if (nivelNormalizado.toLowerCase().includes('moderado')) {
+                            nivelCalculado = 'Riesgo moderado';
+                        } else if (nivelNormalizado.toLowerCase().includes('alto')) {
+                            nivelCalculado = 'Riesgo alto';
+                        } else {
+                            nivelCalculado = nivelNormalizado; // Usar tal cual
+                        }
+                    } else {
+                        nivelCalculado = 'N/A';
+                    }
+                }
+
+                document.getElementById('nivel_calculado_display').textContent = nivelCalculado;
+                console.log('📋 FASE 3B: Nivel calculado final:', nivelCalculado);
+
+                // Poblar select de ajuste de nivel (opciones dinámicas según nivel actual)
+                const selectNivel = document.getElementById('nivel_riesgo_select');
+                selectNivel.innerHTML = '<option value="sin_cambio" selected>Sin cambio (usar nivel calculado)</option>';
+
+                // FASE 3B: Agregar opciones de degradación según nivel actual
+                console.log('🔧 FASE 3B: Poblando select según nivel:', nivelCalculado);
+
+                if (nivelCalculado.toLowerCase().includes('bajo')) {
+                    selectNivel.innerHTML += '<option value="moderado">Riesgo moderado (degradar a moderado)</option>';
+                    selectNivel.innerHTML += '<option value="alto">Riesgo alto (degradar a alto)</option>';
+                    console.log('📋 FASE 3B: Opciones agregadas para nivel BAJO');
+                } else if (nivelCalculado.toLowerCase().includes('moderado')) {
+                    selectNivel.innerHTML += '<option value="alto">Riesgo alto (degradar a alto)</option>';
+                    console.log('📋 FASE 3B: Opciones agregadas para nivel MODERADO');
+                } else if (nivelCalculado.toLowerCase().includes('alto')) {
+                    // Ya está en el nivel más conservador
+                    console.log('📋 FASE 3B: Nivel ALTO - no se puede degradar más');
+                } else {
+                    // Nivel desconocido - agregar todas las opciones
+                    selectNivel.innerHTML += '<option value="moderado">Riesgo moderado</option>';
+                    selectNivel.innerHTML += '<option value="alto">Riesgo alto</option>';
+                    console.log('⚠️ FASE 3B: Nivel desconocido, agregando todas las opciones');
+                }
+
+                // Limpiar justificación
+                document.getElementById('justificacion_textarea').value = '';
+
+                // Mostrar sección de modificaciones SIEMPRE que se abre el modal
+                document.getElementById('seccion-modificaciones-aprobacion').style.display = 'block';
+
+                // 🔥 NUEVO: Mostrar botón "Guardar Cambios" (aplica para casos pendientes)
+                const btnGuardarCambios = document.getElementById('btn-guardar-modificaciones');
+                if (btnGuardarCambios) {
+                    btnGuardarCambios.style.display = 'inline-block';
+                }
+
+                const btnRechazar = document.getElementById('btn-rechazar-desde-modal');
+                if (btnRechazar) {
+                    btnRechazar.style.display = 'inline-block';
+                }
+
+                console.log('✅ FASE 3B: Campos de modificación poblados correctamente');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión al cargar el detalle: ' + error.message);
+            }
+        }
+
+        // Función auxiliar para formatear montos (FASE 3B)
+        function formatearMonto(valor, decimales = 0) {
+            if (valor === undefined || valor === null) return 'N/A';
+            try {
+                return parseFloat(valor).toFixed(decimales).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } catch {
+                return 'N/A';
+            }
+        }
+
+        // Función para formatear input mientras se escribe (FASE 3B)
+        function formatearMontoInput(input) {
+            // Guardar posición del cursor
+            let cursorPos = input.selectionStart;
+            let valorAnterior = input.value;
+
+            // Limpiar todo excepto números
+            let valor = input.value.replace(/[^\d]/g, '');
+
+            // Si está vacío, salir
+            if (valor === '') {
+                input.value = '';
+                return;
+            }
+
+            // Convertir a número y formatear con puntos como separador de miles
+            let numero = parseInt(valor);
+            let valorFormateado = numero.toLocaleString('es-CO'); // "1.500.000"
+
+            // Calcular nueva posición del cursor
+            // Contar cuántos separadores había antes del cursor
+            let separadoresAntes = (valorAnterior.substring(0, cursorPos).match(/\./g) || []).length;
+            let separadoresAhora = (valorFormateado.substring(0, cursorPos).match(/\./g) || []).length;
+
+            // Ajustar cursor según diferencia de separadores
+            let nuevoCursor = cursorPos + (separadoresAhora - separadoresAntes);
+
+            // Actualizar valor
+            input.value = valorFormateado;
+
+            // Colocar cursor en posición correcta
+            input.setSelectionRange(nuevoCursor, nuevoCursor);
+        }
+
+        // Función para guardar modificaciones sin aprobar (FASE 3B)
+        function guardarModificaciones() {
+            // Validar que hay un caso cargado
+            if (!timestampActual) {
+                alert('⚠️ No hay caso cargado. Por favor cierre el modal y vuelva a abrir.');
+                return;
+            }
+
+            // Ejecutar aprobación directamente con el timestamp actual
+            aprobarCaso(timestampActual);
+        }
+
+        // Generar HTML del detalle
+        function generarHTMLDetalle(ev) {
+            // Funciones de formateo
+            const formatearNumero = (valor, decimales = 1) => {
+                if (valor === undefined || valor === null) return 'N/A';
+                return parseFloat(valor).toFixed(decimales);
+            };
+
+            const formatearMoneda = (valor) => {
+                if (valor === undefined || valor === null) return 'N/A';
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(valor);
+            };
+
+            const formatearPorcentaje = (valor) => {
+                if (valor === undefined || valor === null) return 'N/A';
+                return `${parseFloat(valor).toFixed(2)}%`;
+            };
+
+            // 🎨 Función helper para determinar color según nivel de riesgo
+            const obtenerColorNivel = (nombreNivel) => {
+                if (!nombreNivel) return { bg: '#999999', text: '#fff' };
+
+                const nivelNorm = nombreNivel.toLowerCase();
+
+                if (nivelNorm.includes('alto')) {
+                    return { bg: '#FF4136', text: '#fff', name: 'Alto riesgo' };
+                } else if (nivelNorm.includes('moderado') || nivelNorm.includes('medio')) {
+                    return { bg: '#FFDC00', text: '#000', name: 'Riesgo moderado' };
+                } else if (nivelNorm.includes('bajo')) {
+                    return { bg: '#2ECC40', text: '#fff', name: 'Bajo riesgo' };
+                }
+
+                return { bg: '#999999', text: '#fff', name: nombreNivel };
+            };
+
+            // Extraer datos del resultado (estructura correcta)
+            const resultado = ev.resultado || {};
+            const score = resultado.score;
+            const scoreNormalizado = resultado.score_normalizado;
+            const nivel = resultado.nivel || 'Desconocido';
+
+            // DataCrédito - buscar en criterios_evaluados si no está a nivel superior
+            let datacredito = ev.datacredito || ev.puntaje_datacredito || null;
+            if (!datacredito && ev.criterios_evaluados && Array.isArray(ev.criterios_evaluados)) {
+                const critDC = ev.criterios_evaluados.find(c => c.codigo === 'puntaje_datacredito');
+                if (critDC && critDC.valor) datacredito = critDC.valor;
+            }
+            if (!datacredito) datacredito = 'N/A';
+
+            // Info del cliente
+            const nombreCliente = ev.nombre_cliente || ev.cliente || 'N/A';
+            const cedula = ev.cedula || 'N/A';
+            const asesor = ev.asesor || 'N/A';
+            const lineaCredito = ev.linea_credito || ev.tipo_credito || 'N/A';
+
+            // 🛡️ Helper para prevenir XSS
+            const escapeHtml = (unsafe) => {
+                if (unsafe === null || unsafe === undefined) return '';
+                return String(unsafe)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
+
+            // Fuente de datos: usar criterios_evaluados si criterios_detalle está vacío
+            const fuenteCriterios = (ev.criterios_detalle && Array.isArray(ev.criterios_detalle) && ev.criterios_detalle.length > 0)
+                ? ev.criterios_detalle
+                : (ev.criterios_evaluados && Array.isArray(ev.criterios_evaluados) && ev.criterios_evaluados.length > 0)
+                    ? ev.criterios_evaluados
+                    : (ev.criterios_detalle && typeof ev.criterios_detalle === 'object' && !Array.isArray(ev.criterios_detalle))
+                        ? ev.criterios_detalle
+                        : null;
+
+            // Generar HTML de valores ingresados sección ORDENADA
+            let htmlValoresIngresados = '';
+            if (fuenteCriterios && Array.isArray(fuenteCriterios) && fuenteCriterios.length > 0) {
+                // Formato array (criterios_detalle o criterios_evaluados)
+                const formatearValorCriterio = (item) => {
+                    let val = item.valor;
+                    if (val === null || val === undefined || val === '') return 'N/A';
+                    if (item.es_moneda) return formatearMoneda(val);
+                    if (item.es_porcentaje) return formatearPorcentaje(val);
+                    // Detectar valores monetarios por nombre
+                    const nombreLower = (item.nombre || '').toLowerCase();
+                    if ((nombreLower.includes('ingreso') || nombreLower.includes('saldo') || nombreLower.includes('cupo') || nombreLower.includes('mora')) && typeof val === 'number' && val > 1000) {
+                        return formatearMoneda(val);
+                    }
+                    if (nombreLower.includes('vs.') && nombreLower.includes('%') && typeof val === 'number') {
+                        return formatearPorcentaje(val);
+                    }
+                    return escapeHtml(String(val));
+                };
+                htmlValoresIngresados = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Criterio</th>
+                                    <th style="width: 30%;">Valor Ingresado</th>
+                                    <th style="width: 30%;">Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${fuenteCriterios.map(item => `
+                                    <tr>
+                                        <td class="fw-medium">${escapeHtml(item.nombre)}</td>
+                                        <td>${formatearValorCriterio(item)}</td>
+                                        <td><small class="text-muted">${escapeHtml(item.descripcion || item.detalle || '')}</small></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (fuenteCriterios && typeof fuenteCriterios === 'object' && !Array.isArray(fuenteCriterios)) {
+                // Retrocompatibilidad con formato antiguo
+                htmlValoresIngresados = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">Criterio</th>
+                                    <th style="width: 50%;">Valor Ingresado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(fuenteCriterios).map(([criterio, datos]) => `
+                                    <tr>
+                                        <td class="fw-medium">${escapeHtml(criterio)}</td>
+                                        <td>${escapeHtml(datos.valor) || 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // Generar HTML de criterios evaluados (barras de progreso ORDENADAS)
+            let htmlCriterios = '';
+            let totalCriterios = 0;
+            if (fuenteCriterios && Array.isArray(fuenteCriterios) && fuenteCriterios.length > 0) {
+                totalCriterios = fuenteCriterios.length;
+                fuenteCriterios.forEach(item => {
+                    // Usar puntos_ponderados/puntos_maximos si disponibles (criterios_evaluados)
+                    const puntosPonderados = item.puntos_ponderados !== undefined ? item.puntos_ponderados : item.puntaje;
+                    const puntosMaximos = item.puntos_maximos !== undefined ? item.puntos_maximos : item.peso;
+                    const porcentajeCompletado = puntosMaximos > 0 ? Math.max(0, Math.min(100, (puntosPonderados / puntosMaximos) * 100)) : 0;
+                    const esNegativo = puntosPonderados < 0;
+                    const colorBarra = esNegativo ? 'bg-danger' : (porcentajeCompletado >= 50 ? 'bg-success' : 'bg-warning');
+                    const anchoVisual = esNegativo ? Math.min(100, Math.abs(puntosPonderados / puntosMaximos) * 100) : porcentajeCompletado;
+                    htmlCriterios += `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-medium">${escapeHtml(item.nombre)}</span>
+                                <span class="badge ${esNegativo ? 'bg-danger' : 'bg-primary'}">${formatearNumero(puntosPonderados, 2)} / ${formatearNumero(puntosMaximos, 2)}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar ${colorBarra}"
+                                     role="progressbar"
+                                     style="width: ${anchoVisual}%"
+                                     aria-valuenow="${anchoVisual}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            ${item.descripcion ? `<small class="text-muted">${escapeHtml(item.descripcion)}</small>` : ''}
+                        </div>
+                    `;
+                });
+            } else if (fuenteCriterios && typeof fuenteCriterios === 'object' && !Array.isArray(fuenteCriterios)) {
+                // Retrocompatibilidad con formato antiguo
+                totalCriterios = Object.keys(fuenteCriterios).length;
+                for (const [criterio, datos] of Object.entries(fuenteCriterios)) {
+                    const porcentajeCompletado = datos.peso > 0 ? (datos.puntaje / datos.peso) * 100 : 0;
+                    htmlCriterios += `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-medium">${escapeHtml(criterio)}</span>
+                                <span class="badge bg-primary">${formatearNumero(datos.puntaje)} / ${formatearNumero(datos.peso)}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar ${porcentajeCompletado >= 50 ? 'bg-success' : 'bg-warning'}"
+                                     role="progressbar"
+                                     style="width: ${porcentajeCompletado}%"
+                                     aria-valuenow="${porcentajeCompletado}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Generar HTML de simulación
+            let htmlSimulacion = '';
+            if (ev.simulacion) {
+                const sim = ev.simulacion;
+                htmlSimulacion = `
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted mb-3">
+                                        <i class="bi bi-cash-stack"></i> Información del Crédito
+                                    </h6>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted">Monto solicitado:</td>
+                                            <td class="fw-bold text-end">${formatearMoneda(sim.monto_solicitado || ev.monto_solicitado)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Plazo:</td>
+                                            <td class="fw-bold text-end">${sim.plazo || ev.plazo} meses</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Tasa mensual:</td>
+                                            <td class="fw-bold text-end">${formatearPorcentaje(sim.tasa_mensual)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Tasa anual:</td>
+                                            <td class="fw-bold text-end">${formatearPorcentaje(sim.tasa_anual)}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted mb-3">
+                                        <i class="bi bi-calculator"></i> Cuota Mensual
+                                    </h6>
+                                    <div class="text-center">
+                                        <h2 class="text-primary mb-0">${formatearMoneda(sim.cuota_mensual)}</h2>
+                                        <p class="text-muted small mb-3">Cuota fija mensual</p>
+                                    </div>
+                                    ${sim.aval_requerido ? `
+                                        <div class="alert alert-info mb-0">
+                                            <i class="bi bi-shield-check"></i>
+                                            <strong>Aval requerido:</strong> ${formatearMoneda(sim.aval_requerido)}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // HTML completo del modal
+            return `
+                <!-- Información del Cliente -->
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bi bi-person-circle"></i> Información del Cliente</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nombre:</strong> ${nombreCliente}</p>
+                                <p><strong>Cédula:</strong> ${cedula}</p>
+                                ${ev.monto_solicitado ? `<p><strong>Monto solicitado:</strong> ${formatearMoneda(ev.monto_solicitado)}</p>` : ''}
+                                <p><strong>Asesor:</strong> ${asesor}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Fecha evaluación:</strong> ${new Date(ev.timestamp).toLocaleString('es-CO')}</p>
+                                <p><strong>Línea de crédito:</strong> ${lineaCredito}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado del Scoring -->
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-graph-up"></i> Resultado del Scoring</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded">
+                                    <h3 class="text-primary mb-0">${formatearNumero(score)}</h3>
+                                    <small class="text-muted">Score Total</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded">
+                                    <h3 class="text-warning mb-0">${datacredito}</h3>
+                                    <small class="text-muted">DataCrédito</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded">
+                                    <h3 class="mb-0" style="color: ${obtenerColorNivel(nivel).bg}; font-weight: 700; text-shadow: ${obtenerColorNivel(nivel).bg === '#FFDC00' ? '0 0 1px rgba(0,0,0,0.3)' : 'none'};">${nivel}</h3>
+                                    <small class="text-muted">Nivel de Riesgo</small>
+                                </div>
+                            </div>
+                        <div class="card-body">
+                            ${htmlValoresIngresados || '<div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> No hay valores disponibles para este caso.</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Criterios Evaluados -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="bi bi-list-check"></i> Criterios Evaluados (${totalCriterios})</h6>
+                        </div>
+                        <div class="card-body">
+                            ${htmlCriterios || '<div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> No hay detalles de criterios disponibles para este caso.</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Simulación del Crédito -->
+                    ${htmlSimulacion ? `
+                        <div class="card mb-3">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0"><i class="bi bi-calculator-fill"></i> Simulación del Crédito</h6>
+                            </div>
+                            <div class="card-body">
+                                ${htmlSimulacion}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Estado de Aprobación -->
+                    <div class="card">
+                        <div class="card-header ${resultado.requiere_comite ? 'bg-warning' : (resultado.aprobado ? 'bg-success' : 'bg-danger')} text-white">
+                            <h6 class="mb-0">
+                                ${resultado.requiere_comite ? `
+                                    <i class="bi bi-people-fill"></i> Requiere Revisión del Comité
+                                ` : resultado.aprobado ? `
+                                    <i class="bi bi-check-circle"></i> Aprobado
+                                ` : `
+                                    <i class="bi bi-x-circle"></i> Rechazado
+                                `}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            ${resultado.rechazo_automatico ? `
+                                <div class="alert alert-danger mb-0">
+                                    <strong>Motivo de rechazo automático:</strong><br>
+                                    ${escapeHtml(String(resultado.rechazo_automatico))}
+                                </div>
+                            ` : resultado.razon_rechazo ? `
+                                <div class="alert alert-danger mb-0">
+                                    <strong>Razón de rechazo:</strong><br>
+                                    ${escapeHtml(resultado.razon_rechazo)}
+                                </div>
+                            ` : resultado.requiere_comite ? `
+                                <div class="alert alert-warning mb-0">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Estado:</strong> ${resultado.estado_decision || 'REQUIERE_COMITE'}<br>
+                                    <small>Score: ${formatearNumero(resultado.score_normalizado || resultado.score)} · 
+                                    Umbral aprobación: ${formatearNumero(resultado.puntaje_minimo)} · 
+                                    Umbral comité: ${formatearNumero(resultado.puntaje_minimo_comite)}</small>
+                                </div>
+                            ` : resultado.aprobado ? `
+                                <p class="mb-0">Este caso fue aprobado automáticamente por el sistema de scoring.</p>
+                            ` : `
+                                <p class="mb-0">Caso pendiente de revisión.</p>
+                            `}
+                        </div>
+                    </div>
+
+                    <!-- DECISIÓN DEL COMITÉ -->
+                    ${ev.decision_admin ? `
+                        <div class="card mt-3 border-primary">
+                            <div class="card-header ${ev.estado_comite === 'approved' ? 'bg-success' : 'bg-danger'} text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-${ev.estado_comite === 'approved' ? 'check-circle' : 'x-circle'} me-2"></i>
+                                    DECISIÓN DEL COMITÉ: ${ev.estado_comite === 'approved' ? 'APROBADO' : 'RECHAZADO'}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Info de decisión -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <i class="bi bi-person-badge me-2 text-primary"></i>
+                                            <strong>Decidido por:</strong> ${ev.decision_admin.admin}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <i class="bi bi-calendar-event me-2 text-primary"></i>
+                                            <strong>Fecha:</strong> ${new Date(ev.decision_admin.timestamp).toLocaleString('es-CO')}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                ${ev.estado_comite === 'approved' ? `
+                                    <!-- Modificaciones aplicadas (si fue aprobado) -->
+                                    <hr>
+                                    <h6 class="text-success mb-3"><i class="bi bi-pencil-square me-2"></i>Modificaciones Aplicadas</h6>
+                                    <div class="row g-3">
+                                        ${ev.monto_aprobado ? `
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-body">
+                                                        <h6 class="card-subtitle mb-2 text-muted">💰 Monto</h6>
+                                                        <p class="mb-1"><strong>Solicitado:</strong> ${formatearMoneda(ev.monto_solicitado)}</p>
+                                                        <p class="mb-0 text-success"><strong>Aprobado:</strong> ${formatearMoneda(ev.monto_aprobado)}</p>
+                                                        ${ev.monto_aprobado < ev.monto_solicitado ? `
+                                                            <small class="text-muted">Reducción: ${formatearMoneda(ev.monto_solicitado - ev.monto_aprobado)}</small>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+
+                                        ${(() => {
+                            // Determinar nivel a mostrar y su color
+                            const nivelMostrar = ev.nivel_riesgo_ajustado || ev.nivel_riesgo || nivel;
+                            const colores = obtenerColorNivel(nivelMostrar);
+                            const borderColor = colores.bg;
+
+                            return `
+                                                <div class="col-md-6">
+                                                    <div class="card" style="border: 2px solid ${borderColor};">
+                                                        <div class="card-body">
+                                                            <h6 class="card-subtitle mb-2 text-muted">🛡️ Nivel de Riesgo</h6>
+                                                            ${ev.nivel_riesgo_ajustado ? `
+                                                                <p class="mb-1"><strong>Calculado:</strong> ${ev.nivel_riesgo || nivel}</p>
+                                                                <p class="mb-2"><strong>Ajustado:</strong>
+                                                                    <span style="background-color: ${borderColor}; color: ${colores.text}; padding: 4px 8px; border-radius: 4px; font-weight: 700;">
+                                                                        ${ev.nivel_riesgo_ajustado}
+                                                                    </span>
+                                                                </p>
+                                                            ` : `
+                                                                <p class="mb-2"><strong>Aplicado:</strong>
+                                                                    <span style="background-color: ${borderColor}; color: ${colores.text}; padding: 4px 8px; border-radius: 4px; font-weight: 700;">
+                                                                        ${nivelMostrar}
+                                                                    </span>
+                                                                </p>
+                                                            `}
+                                                            ${ev.tasas_nivel_riesgo ? `
+                                                                <div class="mt-2 p-2" style="background-color: ${borderColor}15; border-left: 3px solid ${borderColor}; border-radius: 4px;">
+                                                                    <small class="d-block mb-1"><strong>E.A.:</strong> <strong>${ev.tasas_nivel_riesgo.tasa_anual} %</strong></small>
+                                                                    <small class="d-block"><strong>Nom. Mensual:</strong> <strong>${ev.tasas_nivel_riesgo.tasa_mensual} %</strong></small>
+                                                                </div>
+                                                            ` : ''}
+                                                            <small class="text-muted d-block mt-2">${ev.nivel_riesgo_ajustado ? 'Degradación aplicada' : 'Sin modificaciones del comité'}</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                ${!ev.monto_aprobado && !ev.nivel_riesgo_ajustado ? `
+                                                    <div class="col-md-6">
+                                                        <div class="alert alert-info mb-0 h-100 d-flex align-items-center">
+                                                            <div>
+                                                                <i class="bi bi-info-circle me-2"></i>
+                                                                <strong>Sin modificaciones</strong> - El caso fue aprobado con los valores originales.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ` : ''}
+                                            `;
+                        })()}
+                                    </div>
+
+                                    ${ev.justificacion_modificacion ? `
+                                        <hr>
+                                        <div class="alert alert-light border mb-0">
+                                            <h6 class="alert-heading"><i class="bi bi-chat-left-text me-2"></i>Justificación</h6>
+                                            <p class="mb-0">${ev.justificacion_modificacion}</p>
+                                        </div>
+                                    ` : ''}
+                                ` : `
+                                    <!-- Motivo de rechazo -->
+                                    ${ev.motivo_rechazo ? `
+                                        <div class="alert alert-danger mb-0">
+                                            <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Motivo del Rechazo</h6>
+                                            <p class="mb-0">${ev.motivo_rechazo}</p>
+                                        </div>
+                                    ` : ''}
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Botón Nueva Simulación (solo para casos aprobados) -->
+                ${ev.decision_admin && ev.estado_comite === 'approved' ? `
+                    <div class="card border-primary mt-3">
+                        <div class="card-body text-center">
+                            <h6 class="card-title mb-3">
+                                <i class="bi bi-calculator me-2"></i>Simulación de Crédito
+                            </h6>
+                            <button class="btn btn-primary btn-lg" onclick="abrirSimuladorDesdeCasoAdmin('${ev.timestamp}')">
+                                <i class="bi bi-calculator me-2"></i>Ver Cuota Mensual
+                            </button>
+                            <p class="text-muted small mt-2 mb-0">
+                                Calcular cuota con monto y tasa aprobados
+                            </p>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Abrir modal de detalle con sección de modificaciones visible para aprobar
+        function abrirModalParaAprobar(timestamp) {
+            // Primero abrir el modal de detalle
+            verDetalle(timestamp);
+
+            // Esperar a que el modal se renderice
+            setTimeout(() => {
+                // Mostrar la sección de modificaciones
+                const seccionModificaciones = document.getElementById('seccion-modificaciones-aprobacion');
+                if (seccionModificaciones) {
+                    seccionModificaciones.style.display = 'block';
+
+                    // Scroll hacia la sección de modificaciones
+                    seccionModificaciones.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 500); // 500ms para que el modal se renderice completamente
+        }
+
+        // Ver detalle de decisión (desde tabla de Decisiones Recientes)
+        async function verDetalleDecision(timestamp) {
+            console.log('🔍 Abriendo detalle de decisión para timestamp:', timestamp);
+
+            try {
+                const response = await fetch(`/api/detalle_evaluacion/${timestamp}`);
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.evaluacion) {
+                    const modalBody = document.getElementById('modalDetalleBody');
+                    modalBody.innerHTML = generarHTMLDetalle(data.evaluacion);
+
+                    // Ocultar sección de modificaciones (ya fue decidido)
+                    const seccionModificaciones = document.getElementById('seccion-modificaciones-aprobacion');
+                    if (seccionModificaciones) {
+                        seccionModificaciones.style.display = 'none';
+                    }
+
+                    // Ocultar botones de acción (no aplica para decisiones recientes)
+                    const btnGuardarCambios = document.getElementById('btn-guardar-modificaciones');
+                    if (btnGuardarCambios) {
+                        btnGuardarCambios.style.display = 'none';
+                    }
+                    const btnRechazarModal = document.getElementById('btn-rechazar-desde-modal');
+                    if (btnRechazarModal) {
+                        btnRechazarModal.style.display = 'none';
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+                    modal.show();
+
+                    console.log('✅ Modal de decisión abierto correctamente');
+                } else {
+                    alert('Error al cargar el detalle: ' + (data.error || 'Respuesta inválida'));
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('Error de conexión al cargar el detalle: ' + error.message);
+            }
+        }
+
+        // Aprobar caso
+        async function aprobarCaso(timestamp) {
+            console.log('🔍 FASE 3B: Iniciando aprobación con posibles modificaciones');
+            console.log('   - Timestamp:', timestamp);
+
+            // Obtener datos del caso actual desde el modal
+            const montoSolicitadoText = document.getElementById('monto_solicitado_display').textContent;
+            const montoSolicitado = parseFloat(montoSolicitadoText.replace(/[$.,]/g, ''));
+
+            // Capturar modificaciones
+            const montoAprobadoInput = document.getElementById('monto_aprobado_input').value.trim();
+            const nivelRiesgoSelect = document.getElementById('nivel_riesgo_select').value;
+            const justificacionTextarea = document.getElementById('justificacion_textarea').value.trim();
+
+            console.log('📋 FASE 3B: Valores capturados:');
+            console.log('   - Monto aprobado input:', montoAprobadoInput);
+            console.log('   - Nivel riesgo select:', nivelRiesgoSelect);
+            console.log('   - Justificación:', justificacionTextarea);
+
+            // Validar monto aprobado (si se ingresó)
+            let montoAprobadoFinal = null;
+            if (montoAprobadoInput) {
+                // Limpiar formato (eliminar $, puntos, comas)
+                const montoLimpio = montoAprobadoInput.replace(/[$.,]/g, '');
+                montoAprobadoFinal = parseFloat(montoLimpio);
+
+                if (isNaN(montoAprobadoFinal) || montoAprobadoFinal <= 0) {
+                    alert('Por favor ingrese un monto aprobado válido (mayor a cero)');
+                    console.log('❌ FASE 3B: Monto aprobado inválido:', montoAprobadoInput);
+                    return;
+                }
+
+                if (montoAprobadoFinal > montoSolicitado) {
+                    alert(`El monto aprobado no puede ser mayor al solicitado (${formatearMonto(montoSolicitado)})`);
+                    console.log('❌ FASE 3B: Monto aprobado excede solicitado');
+                    return;
+                }
+
+                console.log(`✅ FASE 3B: Monto aprobado válido: ${montoAprobadoFinal}`);
+            }
+
+            // Detectar si hay modificaciones
+            const hayModificaciones = montoAprobadoInput || nivelRiesgoSelect !== 'sin_cambio';
+
+            // Validar justificación si hay modificaciones
+            if (hayModificaciones && !justificacionTextarea) {
+                const confirmar = confirm(
+                    'Ha realizado modificaciones pero no ingresó justificación.\n\n' +
+                    '¿Desea continuar sin justificación? (No recomendado)'
+                );
+                if (!confirmar) {
+                    console.log('ℹ️  FASE 3B: Admin canceló por falta de justificación');
+                    return;
+                }
+            }
+
+            // Confirmación final
+            let mensajeConfirmacion = '¿Está seguro de aprobar este caso?';
+            if (hayModificaciones) {
+                mensajeConfirmacion = '⚠️ Va a aprobar este caso CON MODIFICACIONES:\n\n';
+                if (montoAprobadoInput) {
+                    mensajeConfirmacion += `• Monto aprobado: ${formatearMonto(montoAprobadoFinal)} (solicitado: ${formatearMonto(montoSolicitado)})\n`;
+                }
+                if (nivelRiesgoSelect !== 'sin_cambio') {
+                    mensajeConfirmacion += `• Nivel de riesgo: ${nivelRiesgoSelect}\n`;
+                }
+                mensajeConfirmacion += '\n¿Confirmar aprobación?';
+            }
+
+            if (!confirm(mensajeConfirmacion)) {
+                console.log('ℹ️  FASE 3B: Admin canceló la aprobación');
+                return;
+            }
+
+            try {
+                // Obtener CSRF token del meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // Construir datos para enviar
+                const data = {
+                    timestamp: timestamp,
+                    monto_aprobado: montoAprobadoFinal,
+                    nivel_riesgo_ajustado: nivelRiesgoSelect !== 'sin_cambio' ? nivelRiesgoSelect : null,
+                    justificacion_modificacion: justificacionTextarea || null
+                };
+
+                console.log('📤 FASE 3B: Enviando decisión al backend:', data);
+
+                const response = await fetch('/admin/comite-credito/aprobar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                console.log('📥 FASE 3B: Respuesta del backend:', result);
+
+                if (result.success) {
+                    console.log('✅ FASE 3B: Caso aprobado exitosamente');
+
+                    // Limpiar modificaciones guardadas
+                    window.modificacionesGuardadas = null;
+
+                    // Cerrar modal
+                    try {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalle'));
+                        if (modal) {
+                            modal.hide();
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error cerrando modal:', e);
+                    }
+
+                    // Mostrar mensaje de éxito
+                    alert('✅ Caso aprobado exitosamente: ' + (result.message || ''));
+                    console.log('✅ FASE 3B: Recargando página...');
+
+                    // Recargar página
+                    window.location.reload(true);
+                } else {
+                    alert('❌ Error: ' + (result.error || 'Error desconocido'));
+                    console.log('❌ FASE 3B: Error del backend:', result.error);
+                    // Si el caso ya fue procesado, recargar para limpiar la lista
+                    if (result.error && result.error.includes('ya fue procesado')) {
+                        setTimeout(() => window.location.reload(true), 1000);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ FASE 3B: Error en fetch:', error);
+                alert('Error de conexión: ' + error.message);
+            }
+        }
+
+        // Rechazar desde el modal de detalle
+        function rechazarDesdeModal() {
+            if (!timestampActual) {
+                alert('No hay caso cargado.');
+                return;
+            }
+            // Cerrar modal de detalle
+            try {
+                const modalDetalle = bootstrap.Modal.getInstance(document.getElementById('modalDetalle'));
+                if (modalDetalle) modalDetalle.hide();
+            } catch (e) { /* ignorar */ }
+
+            // Abrir modal de rechazo con el timestamp actual
+            setTimeout(() => {
+                mostrarModalRechazo(timestampActual, 'este cliente');
+            }, 300);
+        }
+
+        // Mostrar modal de rechazo
+        function mostrarModalRechazo(timestamp, cliente) {
+            timestampActual = timestamp;
+            document.getElementById('clienteRechazo').textContent = cliente;
+            document.getElementById('motivoRechazo').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('modalRechazo'));
+            modal.show();
+        }
+
+        // Confirmar rechazo
+        const btnConfirmarRechazo = document.getElementById('btnConfirmarRechazo');
+        if (btnConfirmarRechazo) {
+            btnConfirmarRechazo.addEventListener('click', async function () {
+                const motivo = document.getElementById('motivoRechazo').value.trim();
+
+                if (!motivo) {
+                    alert('Por favor ingrese el motivo del rechazo');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/admin/comite-credito/rechazar', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            timestamp: timestampActual,
+                            motivo: motivo
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('Caso rechazado exitosamente');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo rechazar el caso'));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error de conexión al rechazar el caso');
+                }
+            });
+        }
+
+        // ==================== FILTROS PARA DECISIONES RECIENTES ====================
+        let currentPageDecisiones = 1;
+        let itemsPerPageDecisiones = 20;
+        let allRowsDecisiones = [];
+        let filteredRowsDecisiones = [];
+        let currentFilterDecisiones = 'todos';
+        let filtroFechaDesdeDecisiones = null;
+        let filtroFechaHastaDecisiones = null;
+
+        // Inicializar filtros cuando se carga la pestaña de decisiones
+        document.addEventListener('DOMContentLoaded', function () {
+            // Esperar a que se active la pestaña de decisiones
+            const decisionesTab = document.getElementById('decisiones-tab');
+            if (decisionesTab) {
+                decisionesTab.addEventListener('shown.bs.tab', function () {
+                    inicializarFiltrosDecisiones();
+                });
+            }
+        });
+
+        function inicializarFiltrosDecisiones() {
+            const tbody = document.querySelector('#tablaDecisiones tbody');
+            if (!tbody) return;
+
+            allRowsDecisiones = Array.from(tbody.querySelectorAll('tr'));
+            filteredRowsDecisiones = [...allRowsDecisiones];
+
+            // Event listeners
+            const selectItems = document.getElementById('itemsPerPageDecisiones');
+            if (selectItems) {
+                selectItems.addEventListener('change', function () {
+                    itemsPerPageDecisiones = parseInt(this.value);
+                    currentPageDecisiones = 1;
+                    updatePaginationDecisiones();
+                });
+            }
+
+            const btnPrev = document.getElementById('btnPrevDecisiones');
+            if (btnPrev) {
+                btnPrev.addEventListener('click', () => {
+                    if (currentPageDecisiones > 1) {
+                        currentPageDecisiones--;
+                        updatePaginationDecisiones();
+                    }
+                });
+            }
+
+            const btnNext = document.getElementById('btnNextDecisiones');
+            if (btnNext) {
+                btnNext.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredRowsDecisiones.length / itemsPerPageDecisiones);
+                    if (currentPageDecisiones < totalPages) {
+                        currentPageDecisiones++;
+                        updatePaginationDecisiones();
+                    }
+                });
+            }
+
+            // Botones de filtro por estado
+            document.querySelectorAll('#filtrosDecisiones button').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    // Desactivar todos
+                    document.querySelectorAll('#filtrosDecisiones button').forEach(b => {
+                        b.classList.remove('active', 'btn-primary');
+                        const filter = b.dataset.filterDecision;
+                        if (filter === 'aprobados') {
+                            b.className = 'btn btn-sm btn-outline-success';
+                        } else if (filter === 'rechazados') {
+                            b.className = 'btn btn-sm btn-outline-danger';
+                        } else {
+                            b.className = 'btn btn-sm btn-outline-primary';
+                        }
+                    });
+
+                    // Activar el clickeado
+                    this.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-danger');
+                    this.classList.add('btn-primary', 'active');
+
+                    currentFilterDecisiones = this.dataset.filterDecision;
+                    aplicarFiltrosCombinadosDecisiones();
+                });
+            });
+
+            updatePaginationDecisiones();
+        }
+
+        function updatePaginationDecisiones() {
+            const totalItems = filteredRowsDecisiones.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPageDecisiones);
+            const start = (currentPageDecisiones - 1) * itemsPerPageDecisiones;
+            const end = start + itemsPerPageDecisiones;
+
+            // Ocultar todas las filas
+            allRowsDecisiones.forEach(row => row.style.display = 'none');
+
+            // Mostrar solo las filas de la página actual
+            filteredRowsDecisiones.slice(start, end).forEach(row => row.style.display = '');
+
+            // Actualizar info
+            const pageInfo = document.getElementById('pageInfoDecisiones');
+            const paginationInfo = document.getElementById('paginationInfoDecisiones');
+            const btnPrev = document.getElementById('btnPrevDecisiones');
+            const btnNext = document.getElementById('btnNextDecisiones');
+
+            if (pageInfo) pageInfo.textContent = `Página ${currentPageDecisiones} de ${totalPages || 1}`;
+            if (paginationInfo) paginationInfo.textContent = `Mostrando ${Math.min(start + 1, totalItems)} - ${Math.min(end, totalItems)} de ${totalItems}`;
+            if (btnPrev) btnPrev.disabled = currentPageDecisiones === 1;
+            if (btnNext) btnNext.disabled = currentPageDecisiones >= totalPages;
+
+            mostrarMensajeSinResultadosDecisiones(totalItems === 0);
+        }
+
+        function aplicarFiltroFechasDecisiones() {
+            console.log('🔍 === APLICAR FILTRO FECHAS DECISIONES ===');
+            const fechaDesde = document.getElementById('fechaDesdeDecisiones').value;
+            const fechaHasta = document.getElementById('fechaHastaDecisiones').value;
+
+            if (!fechaDesde && !fechaHasta) {
+                alert('Por favor selecciona al menos una fecha');
+                return;
+            }
+
+            if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+                alert('La fecha "Desde" no puede ser mayor que la fecha "Hasta"');
+                return;
+            }
+
+            filtroFechaDesdeDecisiones = fechaDesde || null;
+            filtroFechaHastaDecisiones = fechaHasta || null;
+
+            console.log('✅ Variables globales actualizadas:');
+            console.log('   - filtroFechaDesdeDecisiones:', filtroFechaDesdeDecisiones);
+            console.log('   - filtroFechaHastaDecisiones:', filtroFechaHastaDecisiones);
+
+            aplicarFiltrosCombinadosDecisiones();
+
+            let mensaje = 'Filtrando por fecha ';
+            if (fechaDesde && fechaHasta) {
+                mensaje += `desde ${formatearFechaDecisiones(fechaDesde)} hasta ${formatearFechaDecisiones(fechaHasta)}`;
+            } else if (fechaDesde) {
+                mensaje += `desde ${formatearFechaDecisiones(fechaDesde)}`;
+            } else {
+                mensaje += `hasta ${formatearFechaDecisiones(fechaHasta)}`;
+            }
+
+            document.getElementById('mensajeFiltroDecisiones').textContent = mensaje;
+            document.getElementById('alertFiltroActivoDecisiones').style.display = 'block';
+        }
+
+        function limpiarFiltroFechasDecisiones() {
+            console.log('🧹 === LIMPIAR FILTRO FECHAS DECISIONES ===');
+            document.getElementById('fechaDesdeDecisiones').value = '';
+            document.getElementById('fechaHastaDecisiones').value = '';
+            document.getElementById('alertFiltroActivoDecisiones').style.display = 'none';
+
+            filtroFechaDesdeDecisiones = null;
+            filtroFechaHastaDecisiones = null;
+
+            aplicarFiltrosCombinadosDecisiones();
+        }
+
+        function aplicarFiltrosCombinadosDecisiones() {
+            console.log('🔄 === APLICAR FILTROS COMBINADOS DECISIONES ===');
+            console.log('📊 Estado inicial:');
+            console.log('   - Total filas:', allRowsDecisiones.length);
+            console.log('   - Filtro estado:', currentFilterDecisiones);
+            console.log('   - Filtro fecha desde:', filtroFechaDesdeDecisiones || 'ninguno');
+            console.log('   - Filtro fecha hasta:', filtroFechaHastaDecisiones || 'ninguno');
+
+            // PASO 1: Filtrar por estado (aprobado/rechazado)
+            if (currentFilterDecisiones === 'todos') {
+                filteredRowsDecisiones = [...allRowsDecisiones];
+                console.log('📋 Paso 1: Mostrando TODOS');
+            } else {
+                filteredRowsDecisiones = allRowsDecisiones.filter(row => {
+                    // Buscar el badge en la columna DECISIÓN (índice 3)
+                    const celdaDecision = row.cells[3];
+                    if (!celdaDecision) return false;
+
+                    const badge = celdaDecision.querySelector('.badge');
+                    if (!badge) return false;
+
+                    const esAprobado = badge.classList.contains('bg-success');
+                    const esRechazado = badge.classList.contains('bg-danger');
+
+                    if (currentFilterDecisiones === 'aprobados') {
+                        return esAprobado;
+                    } else if (currentFilterDecisiones === 'rechazados') {
+                        return esRechazado;
+                    }
+                    return false;
+                });
+                console.log(`📋 Paso 1: Filtrado por "${currentFilterDecisiones}" - ${filteredRowsDecisiones.length} filas`);
+            }
+
+            // PASO 2: Aplicar filtro de fecha (si existe)
+            if (filtroFechaDesdeDecisiones || filtroFechaHastaDecisiones) {
+                console.log('📅 Paso 2: Aplicando filtro de fechas...');
+                const filteredRowsAntes = filteredRowsDecisiones.length;
+
+                filteredRowsDecisiones = filteredRowsDecisiones.filter(fila => {
+                    // Leer fecha de la columna FECHA (índice 5)
+                    const celdaFecha = fila.cells[5];
+
+                    if (!celdaFecha) {
+                        console.warn('⚠️ Fila sin celda de fecha');
+                        return false;
+                    }
+
+                    const textoFecha = celdaFecha.textContent.trim();
+
+                    // Si dice "N/A" o está vacío, excluir
+                    if (textoFecha === 'N/A' || textoFecha === '' || textoFecha === '-') {
+                        console.log(`   ❌ Excluido: sin fecha válida`);
+                        return false;
+                    }
+
+                    // Extraer fecha (formato: "2025-12-12 10:57")
+                    const fechaFila = textoFecha.substring(0, 10);
+
+                    // Validar formato
+                    if (!/^\d{4}-\d{2}-\d{2}/.test(fechaFila)) {
+                        console.warn('⚠️ Formato de fecha inválido:', fechaFila);
+                        return false;
+                    }
+
+                    // Comparar fechas
+                    let cumpleFechaDesde = true;
+                    let cumpleFechaHasta = true;
+
+                    if (filtroFechaDesdeDecisiones) {
+                        cumpleFechaDesde = fechaFila >= filtroFechaDesdeDecisiones;
+                    }
+
+                    if (filtroFechaHastaDecisiones) {
+                        cumpleFechaHasta = fechaFila <= filtroFechaHastaDecisiones;
+                    }
+
+                    const cumple = cumpleFechaDesde && cumpleFechaHasta;
+
+                    if (!cumple) {
+                        console.log(`   ❌ Excluido: ${fechaFila} (Desde: ${cumpleFechaDesde}, Hasta: ${cumpleFechaHasta})`);
+                    }
+
+                    return cumple;
+                });
+
+                console.log(`📅 Paso 2: Después de filtro fecha - ${filteredRowsAntes} → ${filteredRowsDecisiones.length} filas`);
+            } else {
+                console.log('📅 Paso 2: No hay filtro de fecha activo');
+            }
+
+            console.log('✅ Resultado final:', filteredRowsDecisiones.length, 'filas');
+
+            // Reiniciar a página 1
+            currentPageDecisiones = 1;
+
+            // Actualizar paginación
+            updatePaginationDecisiones();
+        }
+
+        function formatearFechaDecisiones(fecha) {
+            const partes = fecha.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        function mostrarMensajeSinResultadosDecisiones(mostrar) {
+            let mensajeDiv = document.getElementById('mensaje-sin-resultados-decisiones');
+
+            if (!mensajeDiv) {
+                mensajeDiv = document.createElement('div');
+                mensajeDiv.id = 'mensaje-sin-resultados-decisiones';
+                mensajeDiv.className = 'alert alert-warning text-center my-3';
+                mensajeDiv.innerHTML = `
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>No se encontraron decisiones con los filtros aplicados.</strong>
+                    <br>
+                    <small>Prueba cambiar los filtros o hacer clic en "Limpiar".</small>
+                `;
+
+                const cardHeader = document.querySelector('#decisiones .card-header.bg-white');
+                if (cardHeader) {
+                    cardHeader.insertAdjacentElement('afterend', mensajeDiv);
+                }
+            }
+
+            mensajeDiv.style.display = mostrar ? 'block' : 'none';
+        }
+
+        // ==================== FIN FILTROS DECISIONES ====================
+
+        // Configuración del comité (con verificación nula para evitar error JS)
+        const formConfigComite = document.getElementById('formConfigComite');
+        if (formConfigComite) {
+            formConfigComite.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData);
+
+                const chkComportamiento = document.getElementById('evaluar_comportamiento_interno');
+                if (chkComportamiento) {
+                    data.evaluar_comportamiento_interno = chkComportamiento.checked;
+                }
+
+                console.log('Datos a enviar:', data);
+
+                try {
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+                    const response = await fetch('/admin/comite/configuracion', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Configuración guardada exitosamente');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (result.error || 'No se pudo guardar la configuración'));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error de conexión al guardar la configuración');
+                }
+            });
+        }
+
+        // ============================================
+        // POLLING AUTOMÁTICO - Actualizar casos cada 10 segundos
+        // ============================================
+        let pollingInterval = null;
+
+        function iniciarPolling() {
+            actualizarCasosPendientes();
+            pollingInterval = setInterval(actualizarCasosPendientes, 10000);
+        }
+
+        async function actualizarCasosPendientes() {
+            try {
+                const response = await fetch('/api/comite/pendientes');
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                if (data.success && data.hay_nuevos) {
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error en polling:', error);
+            }
+        }
+
+        // Iniciar polling al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            iniciarPolling();
+        });
+
+        // Detener polling al salir de la página
+        window.addEventListener('beforeunload', function () {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        });
+    </script>
+    <script>
+        // Formatear campos de moneda al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            const camposCurrency = document.querySelectorAll('input[data-tipo="currency"]');
+            camposCurrency.forEach(input => {
+                if (input.value && !input.value.includes('.')) {
+                    // Solo formatear si no tiene puntos ya
+                    const valor = parseInt(input.value.replace(/[^\d]/g, ''));
+                    if (!isNaN(valor)) {
+                        input.value = valor.toLocaleString('es-CO');
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script>
+        // Función para abrir simulador desde decisión reciente (admin)
+        function abrirSimuladorDesdeCasoAdmin(timestamp) {
+            const url = `/simulador?caso=${encodeURIComponent(timestamp)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+
+    <script>
+        // Deshabilitar inputs de configuración si no puede editar
+        document.addEventListener('DOMContentLoaded', function () {
+            {% if not puede_editar_config %}
+            // Deshabilitar todos los inputs del formulario de configuración
+            const formConfig = document.getElementById('formConfigComite');
+            if (formConfig) {
+                const inputs = formConfig.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.classList.add('disabled');
+                });
+            }
+            {% endif %}
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignaciones de Equipo - Loansi Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'partials/navbar_asesor.html' %}
+
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="bi bi-people-fill me-2"></i>Asignaciones de Equipo</h2>
+                <p class="text-muted mb-0">Gestiona qué usuarios puede ver cada supervisor/auditor/gerente</p>
+            </div>
+            <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Volver a Admin
+            </a>
+        </div>
+
+        {% if mensaje %}
+        <div class="alert alert-{{ tipo_mensaje }} alert-dismissible fade show" role="alert">
+            {{ mensaje }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Formulario para agregar asignación -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Nueva Asignación</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="row g-3 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="accion" value="agregar">
+
+                    <div class="col-md-5">
+                        <label for="manager_username" class="form-label">
+                            <i class="bi bi-person-badge me-1"></i>Manager (Supervisor/Auditor/Gerente)
+                        </label>
+                        <select name="manager_username" id="manager_username" class="form-select" required>
+                            <option value="">-- Seleccionar Manager --</option>
+                            {% for m in managers %}
+                            <option value="{{ m.username }}">
+                                {{ m.username }} ({{ m.rol }})
+                                {% if m.nombre_completo %} - {{ m.nombre_completo }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label for="member_username" class="form-label">
+                            <i class="bi bi-person me-1"></i>Usuario a Asignar
+                        </label>
+                        <select name="member_username" id="member_username" class="form-select" required>
+                            <option value="">-- Seleccionar Usuario --</option>
+                            {% for m in members %}
+                            <option value="{{ m.username }}">
+                                {{ m.username }} ({{ m.rol }})
+                                {% if m.nombre_completo %} - {{ m.nombre_completo }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-lg me-1"></i>Asignar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de asignaciones actuales -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Asignaciones Actuales</h5>
+            </div>
+            <div class="card-body">
+                {% if assignments_by_manager %}
+                {% for manager, data in assignments_by_manager.items() %}
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person-badge me-2"></i>
+                                <strong>{{ manager }}</strong>
+                                <span class="badge
+                                        {% if data.manager_rol == 'supervisor' %}bg-purple
+                                        {% elif data.manager_rol == 'auditor' %}bg-warning text-dark
+                                        {% elif data.manager_rol == 'gerente' %}bg-success
+                                        {% else %}bg-secondary{% endif %} ms-2" {% if data.manager_rol=='supervisor'
+                                    %}style="background-color: #6f42c1 !important;" {% endif %}>
+                                    {{ data.manager_rol }}
+                                </span>
+                            </div>
+                            <span class="badge bg-info">{{ data.members|length }} asignado(s)</span>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for a in data.members %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person me-2"></i>
+                                {{ a.member_username }}
+                                <span class="badge bg-secondary ms-1">{{ a.member_rol }}</span>
+                                <small class="text-muted ms-2">
+                                    Desde: {{ a.fecha_creacion[:10] if a.fecha_creacion else 'N/A' }}
+                                </small>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin.asignaciones_equipo') }}" class="d-inline"
+                                onsubmit="return confirm('¿Eliminar esta asignación?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="accion" value="eliminar">
+                                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No hay asignaciones configuradas. Los usuarios con permisos de "equipo" verán 0 resultados
+                    hasta que se les asignen usuarios.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Explicación -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-question-circle me-2"></i>¿Cómo funciona?</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>Supervisores:</strong> Asignarles asesores. El supervisor verá las evaluaciones y
+                        simulaciones de esos asesores.</li>
+                    <li><strong>Gerentes:</strong> Asignarles supervisores. El gerente verá todo lo de los supervisores
+                        asignados Y sus asesores (jerarquía completa).</li>
+                    <li><strong>Auditores:</strong> Similar a gerentes, pueden tener supervisores asignados para
+                        auditar.</li>
+                    <li>Si un usuario con permiso "equipo" no tiene asignaciones, verá <strong>0 resultados</strong>.
+                    </li>
+                    <li>Usuarios con permisos "todos" ven todo el sistema independiente de asignaciones.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Ejemplos de jerarquía -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Ejemplo de Jerarquía</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Configuración Correcta:</h6>
+                        <ul class="small">
+                            <li>Gerente1 → Supervisor1, Supervisor2</li>
+                            <li>Supervisor1 → Asesor1, Asesor2, Asesor3</li>
+                            <li>Supervisor2 → Asesor4, Asesor5</li>
+                        </ul>
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-arrow-right me-1"></i>Gerente1 verá datos de los 5 asesores
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger"><i class="bi bi-x-circle me-1"></i>Evitar:</h6>
+                        <ul class="small">
+                            <li>No asignar un usuario a sí mismo</li>
+                            <li>No crear ciclos (A→B→A)</li>
+                            <li>No asignar gerentes a supervisores</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/theme-unified.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,162 @@
+{% extends 'dashboards/_base_dashboard.html' %}
+
+{% block title %}Panel Comité de Crédito{% endblock %}
+
+{% block dashboard_content %}
+<div class="row g-3 mb-4">
+    <!-- Stat: Casos pendientes -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-inbox-fill"></i>
+            </div>
+            <div class="stat-value">{{ stats.casos_pendientes or 0 }}</div>
+            <div class="stat-label">Por decidir</div>
+            {% if stats.casos_pendientes and stats.casos_pendientes > 5 %}
+            <div class="stat-change text-danger">
+                <i class="bi bi-exclamation-triangle"></i> Requiere atención
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Stat: Aprobados hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-value">{{ stats.aprobados_hoy or 0 }}</div>
+            <div class="stat-label">Aprobados hoy</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Rechazados hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div class="stat-value">{{ stats.rechazados_hoy or 0 }}</div>
+            <div class="stat-label">Rechazados hoy</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Decisiones del mes -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stat-value">{{ stats.decisiones_mes or 0 }}</div>
+            <div class="stat-label">Decisiones este mes</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: Acciones rápidas -->
+    <div class="col-lg-4">
+        <div class="quick-actions">
+            <h5><i class="bi bi-lightning-charge me-2"></i>Acciones Rápidas</h5>
+            
+            {% if tiene_alguno_de(['com_ver_pendientes', 'com_ver_todos']) %}
+            <a href="/admin/comite-credito" class="quick-action-btn" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; border: none;">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Ver Casos Pendientes</span>
+                {% if stats.casos_pendientes and stats.casos_pendientes > 0 %}
+                <span class="badge bg-warning text-dark ms-auto">{{ stats.casos_pendientes }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['sco_hist_todos']) %}
+            <a href="/admin/historial-evaluaciones" class="quick-action-btn">
+                <i class="bi bi-file-earmark-text text-info"></i>
+                <span>Historial de Decisiones</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Distribución por riesgo -->
+        {% if stats.por_riesgo %}
+        <div class="data-panel">
+            <h5><i class="bi bi-pie-chart"></i> Por Nivel de Riesgo</h5>
+            <ul class="data-list">
+                {% for nivel, cantidad in stats.por_riesgo.items() %}
+                <li>
+                    <span class="item-label">
+                        {% if nivel == 'BAJO' or nivel == 'Bajo' %}
+                        <span class="badge bg-success">{{ nivel }}</span>
+                        {% elif nivel == 'MEDIO' or nivel == 'Medio' %}
+                        <span class="badge bg-warning text-dark">{{ nivel }}</span>
+                        {% elif nivel == 'ALTO' or nivel == 'Alto' %}
+                        <span class="badge bg-danger">{{ nivel }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ nivel }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="item-value">{{ cantidad }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Columna derecha: Casos más antiguos -->
+    <div class="col-lg-8">
+        <div class="data-panel">
+            <h5><i class="bi bi-clock-history text-warning"></i> Casos Más Antiguos Pendientes</h5>
+            
+            {% if stats.casos_antiguos %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Asesor</th>
+                            <th>Fecha</th>
+                            <th>Días</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for caso in stats.casos_antiguos %}
+                        <tr>
+                            <td>{{ caso.cliente or 'Sin nombre' }}</td>
+                            <td><small class="text-muted">{{ caso.asesor }}</small></td>
+                            <td>{{ caso.fecha }}</td>
+                            <td>
+                                {% set dias = (now().date() - caso.fecha|replace('-','')|int|string|to_date).days if caso.fecha else 0 %}
+                                {% if dias > 3 %}
+                                <span class="badge bg-danger">+3 días</span>
+                                {% elif dias > 1 %}
+                                <span class="badge bg-warning text-dark">{{ dias }} días</span>
+                                {% else %}
+                                <span class="badge bg-success">Hoy</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if tiene_alguno_de(['com_ver_pendientes', 'com_ver_todos']) %}
+            <div class="text-center mt-3">
+                <a href="/admin/comite-credito" class="btn btn-danger">
+                    <i class="bi bi-arrow-right me-1"></i> Ir a decidir casos
+                </a>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-check-circle" style="font-size: 3rem; color: #198754;"></i>
+                <p class="mt-2 mb-0 h5">¡Sin casos pendientes!</p>
+                <small>Todos los casos han sido resueltos</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

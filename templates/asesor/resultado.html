@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado Simulación - Loansi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <style>
+        /* ========================================
+           ESTILOS PARA VISTA WEB (PANTALLA)
+           ======================================== */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .resultado-wrapper {
+            margin-bottom: 30px;
+        }
+
+        .resultado-header {
+            background: linear-gradient(135deg, var(--primary), #4c8bff);
+            color: white;
+            padding: 30px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .resultado-header h2 {
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .resultado-header h4 {
+            margin: 0;
+            font-weight: 500;
+            opacity: 0.95;
+        }
+
+        .resultado-body {
+            background-color: var(--bg-card);
+            padding: 30px;
+            border-radius: 0 0 15px 15px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Info boxes - tarjetas principales */
+        .info-box {
+            background-color: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .info-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .info-box h5 {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .info-box h3 {
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .info-box small {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Tabla de costos */
+        .costos-table {
+            background-color: var(--bg-card);
+            margin-bottom: 0;
+        }
+
+        .costos-table th {
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .costos-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .total-row {
+            background-color: var(--bg-secondary);
+            font-weight: 700;
+        }
+
+        /* Responsive para tablet */
+        @media screen and (max-width: 1024px) {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            .resultado-body {
+                padding: 20px;
+            }
+
+            .info-box {
+                padding: 20px;
+            }
+        }
+
+        /* Responsive para móvil */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .resultado-header {
+                padding: 25px 15px;
+            }
+
+            .resultado-header h2 {
+                font-size: 1.4rem;
+            }
+
+            .resultado-header h4 {
+                font-size: 1rem;
+            }
+
+            .resultado-body {
+                padding: 20px 15px;
+            }
+
+            .info-box {
+                padding: 18px 12px;
+                margin-bottom: 12px;
+            }
+
+            .info-box h5 {
+                font-size: 0.75rem;
+            }
+
+            .info-box h3 {
+                font-size: 1.4rem;
+            }
+
+            .info-box small {
+                font-size: 0.75rem;
+            }
+
+            .table {
+                font-size: 0.85rem;
+            }
+
+            .alert {
+                font-size: 0.85rem;
+                padding: 10px;
+            }
+
+            .row.mb-4 {
+                margin-bottom: 0.8rem !important;
+            }
+        }
+
+        /* Extra small devices */
+        @media screen and (max-width: 576px) {
+            .container {
+                padding: 10px;
+            }
+
+            .resultado-header {
+                padding: 20px 10px;
+            }
+
+            .resultado-header h2 {
+                font-size: 1.2rem;
+            }
+
+            .resultado-header h4 {
+                font-size: 0.9rem;
+            }
+
+            .resultado-body {
+                padding: 15px 10px;
+            }
+
+            .info-box {
+                padding: 15px 10px;
+            }
+
+            .info-box h5 {
+                font-size: 0.7rem;
+            }
+
+            .info-box h3 {
+                font-size: 1.2rem;
+            }
+
+            .info-box small {
+                font-size: 0.7rem;
+            }
+
+            .btn-lg {
+                font-size: 0.9rem;
+                padding: 10px 16px;
+            }
+
+            h5.mb-3 {
+                font-size: 0.95rem;
+            }
+
+            .table {
+                font-size: 0.75rem;
+            }
+
+            .alert h6 {
+                font-size: 0.75rem;
+            }
+
+            .alert h4 {
+                font-size: 1.1rem;
+            }
+
+            .alert small {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Navegación unificada desde partial -->
+        {% include 'partials/navbar_asesor.html' %}
+
+        <div class="resultado-wrapper">
+            <div class="resultado-header">
+                <h2><i class="bi bi-check-circle"></i> Simulación Completada</h2>
+                <h4>{{ tipo_credito }}</h4>
+            </div>
+
+            <div class="resultado-body">
+                <!-- Información principal - Tarjetas centradas -->
+                <div class="row mb-4 info-boxes-row">
+                    <div class="col-md-4 col-sm-6 mb-3 mb-md-0">
+                        <div class="info-box">
+                            <h5>Monto Solicitado</h5>
+                            <h3 class="text-primary">${{ monto_solicitado }}</h3>
+                        </div>
+                    </div>
+
+                    <!-- Monto a desembolsar (destacado) -->
+                    <div class="col-md-4 col-sm-6 mb-3 mb-md-0">
+                        <div class="info-box" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: white; border: none;">
+                            <h5 style="color: rgba(255,255,255,0.9);">
+                                <i class="bi bi-cash-stack me-2"></i>Desembolso al Cliente
+                            </h5>
+                            <h3 style="color: white; font-weight: 700;">${{ monto_a_desembolsar }}</h3>
+                            <small style="background: rgba(255,255,255,0.2); color: white !important; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;">
+                                {% if not desembolso_completo %}
+                                (Monto solicitado menos costos)
+                                {% else %}
+                                (Monto completo solicitado)
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-12">
+                        <div class="info-box">
+                            <h5>{{ tipo_cuota }}</h5>
+                            <h3 class="text-success">${{ cuota }}</h3>
+                            <small>Por {{ plazo }} {{ plazo_tipo if plazo_tipo is defined else 'meses' }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de costos -->
+                <h5 class="mb-3">Costos Asociados</h5>
+                <div class="table-responsive">
+                    <table class="table costos-table">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nombre, valor in costos.items() %}
+                            <tr>
+                                <td>{{ nombre }}</td>
+                                <td class="text-end">${{ valor }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td>Total Costos</td>
+                                <td class="text-end">${{ total_costos }}</td>
+                            </tr>
+                            <tr class="total-row table-primary">
+                                <td>
+                                    Monto Total a Financiar
+                                    {% if desembolso_completo %}
+                                    <br><small class="text-muted" style="font-weight: normal;">
+                                        <i class="bi bi-info-circle me-1"></i>Incluye costos del crédito
+                                    </small>
+                                    {% else %}
+                                    <br><small class="text-muted" style="font-weight: normal;">
+                                        <i class="bi bi-info-circle me-1"></i>Monto solicitado (costos descontados del desembolso)
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">${{ monto_total }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Tasas de interés -->
+                <div class="row mt-4 tasas-row">
+                    <div class="col-md-4 col-sm-12 mb-3 mb-md-0">
+                        <div class="alert alert-info text-center mb-0">
+                            <h6>Tasa Efectiva Anual</h6>
+                            <h4>{{ tasa_efectiva_anual }}%</h4>
+                            <small>Tasa base del crédito</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-12 mb-3 mb-md-0">
+                        <div class="alert alert-info text-center mb-0">
+                            <h6>Tasa Nominal Mensual</h6>
+                            <h4>{{ tasa_mensual }}%</h4>
+                            <small>Aplicada mensualmente</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-12">
+                        <div class="alert alert-warning text-center mb-0">
+                            <h6>Tasa Efectiva Real</h6>
+                            <h4>{{ tasa_efectiva_real }}%</h4>
+                            <small>Incluye todos los costos (+{{ diferencia_tasa }}%)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-secondary mt-3">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Transparencia Total:</strong> La Tasa Efectiva Real incluye seguros, costos notariales y demás gastos asociados.
+                    Es {{ diferencia_tasa }}% superior a la tasa base debido a estos conceptos obligatorios.
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="d-flex justify-content-center gap-3 mt-4 print-hide">
+                    <button onclick="window.print()" class="btn btn-success btn-lg">
+                        <i class="bi bi-file-pdf"></i> Generar PDF
+                    </button>
+                    <a href="/simulador" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-repeat"></i> Nueva Simulación
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         ESTILOS DE IMPRESIÓN BALANCEADOS
+         1 PÁGINA + LEGIBLE + BIEN DISTRIBUIDO
+         ======================================== -->
+    <style media="print">
+        /* Reset y configuración base */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 0.5cm;
+            }
+
+            /* Ocultar navegación y botones */
+            nav, .navbar, button, .btn, .print-hide,
+            .nav-wrapper-full, .nav-bar, .mobile-nav {
+                display: none !important;
+            }
+
+            /* Reset de márgenes */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: #000 !important;
+            }
+
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .resultado-wrapper {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                page-break-inside: avoid !important;
+            }
+
+            /* Header - MÁS VISIBLE */
+            .resultado-header {
+                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                color: white !important;
+                padding: 10px 12px !important;
+                text-align: center !important;
+                margin-bottom: 0 !important;
+            }
+
+            .resultado-header h2 {
+                font-size: 1.15rem !important;
+                margin: 0 0 4px 0 !important;
+                font-weight: 700 !important;
+                color: white !important;
+            }
+
+            .resultado-header h4 {
+                font-size: 1rem !important;
+                margin: 0 !important;
+                color: rgba(255,255,255,0.95) !important;
+            }
+
+            /* Body con buen padding */
+            .resultado-body {
+                padding: 10px 12px !important;
+                background: white !important;
+            }
+
+            /* INFO-BOXES HORIZONTALES - TAMAÑO LEGIBLE */
+            .row.mb-4.info-boxes-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+                gap: 6px !important;
+                margin-bottom: 10px !important;
+                page-break-inside: avoid !important;
+            }
+
+            .row.mb-4.info-boxes-row > div {
+                flex: 1 1 32% !important;
+                max-width: 32% !important;
+                min-width: 32% !important;
+                margin-bottom: 0 !important;
+                padding: 0 3px !important;
+            }
+
+            .info-box {
+                padding: 8px !important;
+                margin-bottom: 0 !important;
+                background-color: #f8f9fa !important;
+                border: 1px solid #dee2e6 !important;
+                border-radius: 4px !important;
+                text-align: center !important;
+                page-break-inside: avoid !important;
+            }
+
+            .info-box h5 {
+                font-size: 0.7rem !important;
+                margin-bottom: 4px !important;
+                color: #6c757d !important;
+                font-weight: 600 !important;
+                text-transform: uppercase !important;
+                line-height: 1.2 !important;
+            }
+
+            .info-box h3 {
+                font-size: 1.1rem !important;
+                margin: 3px 0 !important;
+                font-weight: 700 !important;
+                line-height: 1.2 !important;
+            }
+
+            .info-box small {
+                font-size: 0.65rem !important;
+                color: #6c757d !important;
+                display: block !important;
+                margin-top: 3px !important;
+                line-height: 1.2 !important;
+            }
+
+            /* Info-box azul */
+            .info-box[style*="linear-gradient"] {
+                background: #0d6efd !important;
+                border-color: #0d6efd !important;
+            }
+
+            .info-box[style*="linear-gradient"] h5,
+            .info-box[style*="linear-gradient"] h3,
+            .info-box[style*="linear-gradient"] small {
+                color: white !important;
+            }
+
+            .info-box[style*="linear-gradient"] small[style*="background"] {
+                background: rgba(255,255,255,0.25) !important;
+                padding: 2px 6px !important;
+                border-radius: 3px !important;
+                font-size: 0.6rem !important;
+            }
+
+            .text-primary { color: #0d6efd !important; }
+            .text-success { color: #198754 !important; }
+
+            /* Título tabla */
+            h5.mb-3 {
+                font-size: 0.85rem !important;
+                margin: 10px 0 6px 0 !important;
+                font-weight: 700 !important;
+                color: #212529 !important;
+            }
+
+            /* Tabla - LEGIBLE */
+            .table-responsive {
+                margin-bottom: 10px !important;
+            }
+
+            .table.costos-table {
+                font-size: 0.7rem !important;
+                margin-bottom: 0 !important;
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+
+            .table.costos-table th,
+            .table.costos-table td {
+                padding: 4px 6px !important;
+                border: 1px solid #dee2e6 !important;
+                line-height: 1.3 !important;
+            }
+
+            .table.costos-table thead th {
+                background-color: #f8f9fa !important;
+                font-weight: 700 !important;
+                color: #212529 !important;
+            }
+
+            .table.costos-table tfoot .total-row {
+                background-color: #f8f9fa !important;
+                font-weight: 700 !important;
+            }
+
+            .table.costos-table tfoot .table-primary {
+                background-color: #cfe2ff !important;
+                font-weight: 700 !important;
+            }
+
+            .table.costos-table tfoot small {
+                font-size: 0.6rem !important;
+                color: #6c757d !important;
+                font-weight: 400 !important;
+            }
+
+            /* TASAS HORIZONTALES - LEGIBLES */
+            .row.mt-4.tasas-row {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+                gap: 6px !important;
+                margin-top: 10px !important;
+                margin-bottom: 0 !important;
+                page-break-inside: avoid !important;
+            }
+
+            .row.mt-4.tasas-row > div {
+                flex: 1 1 32% !important;
+                max-width: 32% !important;
+                min-width: 32% !important;
+                margin-bottom: 0 !important;
+                padding: 0 3px !important;
+            }
+
+            .alert {
+                padding: 6px 8px !important;
+                margin-bottom: 0 !important;
+                border-radius: 4px !important;
+                page-break-inside: avoid !important;
+            }
+
+            .alert h6 {
+                font-size: 0.65rem !important;
+                margin-bottom: 3px !important;
+                font-weight: 600 !important;
+                line-height: 1.2 !important;
+            }
+
+            .alert h4 {
+                font-size: 1rem !important;
+                margin: 2px 0 !important;
+                font-weight: 700 !important;
+                line-height: 1.2 !important;
+            }
+
+            .alert small {
+                font-size: 0.6rem !important;
+                display: block !important;
+                margin-top: 2px !important;
+                line-height: 1.2 !important;
+            }
+
+            .alert-info {
+                background-color: #cfe2ff !important;
+                border: 1px solid #9ec5fe !important;
+                color: #084298 !important;
+            }
+
+            .alert-warning {
+                background-color: #fff3cd !important;
+                border: 1px solid #ffecb5 !important;
+                color: #664d03 !important;
+            }
+
+            /* Alert de transparencia */
+            .alert-secondary.mt-3 {
+                padding: 6px 8px !important;
+                margin-top: 8px !important;
+                margin-bottom: 0 !important;
+                background-color: #e2e3e5 !important;
+                border: 1px solid #d3d6d8 !important;
+                color: #41464b !important;
+                font-size: 0.65rem !important;
+                line-height: 1.3 !important;
+                page-break-inside: avoid !important;
+            }
+
+            .alert-secondary.mt-3 strong {
+                font-weight: 700 !important;
+            }
+
+            /* Ocultar iconos */
+            .bi {
+                display: none !important;
+            }
+
+            /* Footer */
+            .resultado-wrapper::after {
+                content: "LOANSI - Sistema de Créditos | cel/ws: 313 7962058" !important;
+                display: block !important;
+                text-align: center !important;
+                margin-top: 8px !important;
+                padding-top: 6px !important;
+                border-top: 1px solid #dee2e6 !important;
+                font-size: 0.65rem !important;
+                color: #6c757d !important;
+            }
+
+            /* Prevenir saltos de página */
+            .resultado-header, .resultado-body,
+            .info-boxes-row, .table, .tasas-row, .alert {
+                page-break-inside: avoid !important;
+            }
+
+            .resultado-wrapper {
+                page-break-after: avoid !important;
+            }
+        }
+    </style>
+
+    <script src="/static/js/theme-unified.js"></script>
+</body>
+</html>

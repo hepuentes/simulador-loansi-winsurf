@@ -1,0 +1,407 @@
+{% extends 'dashboards/_base_dashboard.html' %}
+
+{% block title %}Panel de Supervisión{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para la lista de usuarios */
+    .user-list-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .user-list-header {
+        background: var(--bg-secondary);
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .user-list-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+    
+    .user-item:last-child {
+        border-bottom: none;
+    }
+    
+    .user-item:hover {
+        background: var(--bg-secondary);
+    }
+    
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-right: 16px;
+        flex-shrink: 0;
+    }
+    
+    .user-avatar.active {
+        background: linear-gradient(135deg, #198754, #146c43);
+        color: white;
+    }
+    
+    .user-avatar.inactive {
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+        border: 2px dashed var(--border-color);
+    }
+    
+    .user-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .user-name .badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+    }
+    
+    .user-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .user-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .user-stats {
+        display: flex;
+        gap: 16px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    
+    .user-stat {
+        text-align: center;
+        min-width: 60px;
+    }
+    
+    .user-stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .user-stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    
+    .user-actions {
+        margin-left: 16px;
+    }
+    
+    .user-actions .btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* Sin asignaciones */
+    .no-assignments {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+    
+    .no-assignments i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+    
+    .no-assignments h4 {
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .user-item {
+            flex-wrap: wrap;
+        }
+        
+        .user-stats {
+            width: 100%;
+            margin-left: 64px;
+            margin-top: 12px;
+            justify-content: flex-start;
+        }
+        
+        .user-actions {
+            width: 100%;
+            margin-left: 64px;
+            margin-top: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Verificar si hay asignaciones -->
+{% if stats.sin_asignaciones %}
+<div class="no-assignments">
+    <i class="bi bi-people"></i>
+    <h4>Sin asesores asignados</h4>
+    <p>No tienes asesores asignados a tu equipo.</p>
+    <p class="text-muted">Contacta al administrador para configurar tu equipo.</p>
+</div>
+{% else %}
+
+<!-- Stats principales -->
+<div class="row g-3 mb-4">
+    <!-- Stat: Asesores activos hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-value">{{ stats.asesores_activos_hoy or 0 }}</div>
+            <div class="stat-label">Asesores activos hoy</div>
+            <div class="stat-change text-muted">
+                de {{ stats.asesores_activos or 0 }} totales
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stat: Evaluaciones equipo hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
+            <div class="stat-value">{{ stats.evaluaciones_equipo_hoy or 0 }}</div>
+            <div class="stat-label">Evaluaciones hoy</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Simulaciones equipo hoy -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-calculator"></i>
+            </div>
+            <div class="stat-value">{{ stats.simulaciones_equipo_hoy or 0 }}</div>
+            <div class="stat-label">Simulaciones hoy</div>
+        </div>
+    </div>
+    
+    <!-- Stat: Casos pendientes -->
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="stat-value">{{ stats.casos_pendientes_total or 0 }}</div>
+            <div class="stat-label">Pendientes comité</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Columna izquierda: Acciones y resumen -->
+    <div class="col-lg-4">
+        <div class="quick-actions">
+            <h5><i class="bi bi-lightning-charge me-2"></i>Acciones Rápidas</h5>
+            
+            {% if tiene_permiso('sim_usar') %}
+            <a href="/simulador" class="quick-action-btn">
+                <i class="bi bi-calculator text-primary"></i>
+                <span>Nueva Simulación</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_permiso('sco_ejecutar') %}
+            <a href="/scoring" class="quick-action-btn">
+                <i class="bi bi-graph-up text-info"></i>
+                <span>Evaluar Scoring</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['sim_hist_equipo', 'sim_hist_todos']) %}
+            <a href="/historial_simulaciones" class="quick-action-btn">
+                <i class="bi bi-clock-history text-secondary"></i>
+                <span>Historial Simulaciones</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['sco_hist_equipo', 'sco_hist_todos']) %}
+            <a href="/admin/historial-evaluaciones" class="quick-action-btn">
+                <i class="bi bi-file-earmark-text text-success"></i>
+                <span>Historial Evaluaciones</span>
+            </a>
+            {% endif %}
+            
+            {% if tiene_alguno_de(['com_ver_pendientes']) %}
+            <a href="/admin/comite-credito" class="quick-action-btn">
+                <i class="bi bi-clipboard-check text-warning"></i>
+                <span>Ver Comité</span>
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Resumen semanal -->
+        <div class="data-panel">
+            <h5><i class="bi bi-calendar-week"></i> Resumen Semanal</h5>
+            <ul class="data-list">
+                <li>
+                    <span class="item-label">Evaluaciones</span>
+                    <span class="item-value">{{ stats.evaluaciones_equipo_semana or 0 }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Simulaciones</span>
+                    <span class="item-value">{{ stats.simulaciones_equipo_semana or 0 }}</span>
+                </li>
+                <li>
+                    <span class="item-label">Asesores activos</span>
+                    <span class="item-value">{{ stats.asesores_activos or 0 }}</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Top asesores de la semana -->
+        {% if stats.top_asesores %}
+        <div class="data-panel">
+            <h5><i class="bi bi-trophy"></i> Top de la Semana</h5>
+            <ul class="data-list">
+                {% for asesor in stats.top_asesores[:3] %}
+                <li>
+                    <span class="item-label">
+                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% else %}🥉{% endif %}
+                        {{ asesor.nombre }}
+                    </span>
+                    <span class="item-value">{{ asesor.total }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Columna derecha: Lista de asesores -->
+    <div class="col-lg-8">
+        <div class="user-list-card">
+            <div class="user-list-header">
+                <h5><i class="bi bi-people me-2"></i>Mi Equipo ({{ stats.asesores_activos or 0 }} asesores)</h5>
+                <span class="badge bg-success">{{ stats.asesores_activos_hoy or 0 }} activos hoy</span>
+            </div>
+            
+            {% if stats.lista_asesores %}
+                {% for asesor in stats.lista_asesores %}
+                <div class="user-item">
+                    <div class="user-avatar {{ 'active' if asesor.stats.activo_hoy else 'inactive' }}">
+                        {% if asesor.stats.activo_hoy %}
+                        <i class="bi bi-person-check"></i>
+                        {% else %}
+                        <i class="bi bi-person"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="user-info">
+                        <div class="user-name">
+                            {{ asesor.nombre_completo }}
+                            {% if asesor.stats.activo_hoy %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Sin actividad</span>
+                            {% endif %}
+                        </div>
+                        <div class="user-meta">
+                            <span><i class="bi bi-at"></i>{{ asesor.username }}</span>
+                            {% if asesor.stats.ultima_actividad %}
+                            <span><i class="bi bi-clock"></i>Última: {{ asesor.stats.ultima_actividad[:16] }}</span>
+                            {% endif %}
+                            {% if asesor.stats.casos_pendientes > 0 %}
+                            <span class="text-warning"><i class="bi bi-hourglass-split"></i>{{ asesor.stats.casos_pendientes }} pendientes</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="user-stat">
+                            <div class="user-stat-value text-primary">{{ asesor.stats.evaluaciones_hoy }}</div>
+                            <div class="user-stat-label">Hoy</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-value">{{ asesor.stats.evaluaciones_semana }}</div>
+                            <div class="user-stat-label">Semana</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-value text-muted">{{ asesor.stats.evaluaciones_mes }}</div>
+                            <div class="user-stat-label">Mes</div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-actions">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% if tiene_alguno_de(['sco_hist_equipo', 'sco_hist_todos']) %}
+                                <li>
+                                    <a class="dropdown-item" href="/admin/historial-evaluaciones?asesor={{ asesor.username }}">
+                                        <i class="bi bi-file-earmark-text me-2"></i>Ver evaluaciones
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if tiene_alguno_de(['sim_hist_equipo', 'sim_hist_todos']) %}
+                                <li>
+                                    <a class="dropdown-item" href="/historial_simulaciones?asesor={{ asesor.username }}">
+                                        <i class="bi bi-clock-history me-2"></i>Ver simulaciones
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="no-assignments">
+                <i class="bi bi-inbox"></i>
+                <p>No hay asesores asignados</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+# Configuración de agentes AI
+.agent/
+.windsurf/
+AGENTS.md
+.antigravityignore
+.cursorignore
+.cursorrules
+.windsurfrules
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+*.db.backup_*
+*_fixed.*
+*_backup.*
+*_old.*
+
+# Flask
+instance/
+*.db
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Test — Admin Loansi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <style>
+        .score-grande {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .score-verde { color: #198754; }
+        .score-amarillo { color: #ffc107; }
+        .score-rojo { color: #dc3545; }
+        .barra-bloque .progress { height: 24px; border-radius: 8px; }
+        .barra-bloque .progress-bar { font-weight: 600; font-size: 0.85rem; }
+        .flag-card { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar_asesor.html' %}
+
+    <div class="container py-4" style="max-width: 900px;">
+        <a href="/psicometrico/admin" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left me-1"></i>Volver al listado
+        </a>
+
+        <!-- Datos personales -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-person-badge me-2"></i>Datos del evaluado
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Cédula:</strong><br>{{ r.cedula or '-' }}</div>
+                    <div class="col-md-3"><strong>Nombre:</strong><br>{{ r.nombre_completo or '-' }}</div>
+                    <div class="col-md-3"><strong>Teléfono:</strong><br>{{ r.telefono or '-' }}</div>
+                    <div class="col-md-3"><strong>Canal:</strong><br>{{ r.canal or '-' }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-3"><strong>Fecha inicio:</strong><br><small>{{ r.fecha_inicio or '-' }}</small></div>
+                    <div class="col-md-3"><strong>Fecha fin:</strong><br><small>{{ r.fecha_fin or '-' }}</small></div>
+                    <div class="col-md-3"><strong>Duración:</strong><br><small>{{ duracion }}</small></div>
+                    <div class="col-md-3"><strong>Latencia prom.:</strong><br><small>{{ latencia_promedio }}</small></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score total -->
+        <div class="card mb-4">
+            <div class="card-body text-center py-4">
+                <div class="score-grande {% if r.score_total and r.score_total >= 70 %}score-verde{% elif r.score_total and r.score_total >= 50 %}score-amarillo{% else %}score-rojo{% endif %}">
+                    {{ '%.1f'|format(r.score_total) if r.score_total is not none else '-' }}
+                </div>
+                <div class="text-muted mt-1">Score Total (0-100)</div>
+                {% if r.estado_validacion == 'valido' %}
+                    <span class="badge bg-success fs-6 mt-2">VÁLIDO</span>
+                {% elif r.estado_validacion == 'sospechoso' %}
+                    <span class="badge bg-warning text-dark fs-6 mt-2">SOSPECHOSO</span>
+                {% elif r.estado_validacion == 'invalido' %}
+                    <span class="badge bg-danger fs-6 mt-2">INVÁLIDO</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Desglose por bloque -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-fill me-2"></i>Desglose por bloque
+            </div>
+            <div class="card-body">
+                {% set bloques = [
+                    ('A Responsabilidad', r.score_bloque_a),
+                    ('B Locus de control', r.score_bloque_b),
+                    ('C Gratificación diferida', r.score_bloque_c),
+                    ('D Integridad', r.score_bloque_d),
+                    ('E Estabilidad emocional', r.score_bloque_e)
+                ] %}
+                {% for nombre_bloque, valor in bloques %}
+                <div class="barra-bloque mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold">{{ nombre_bloque }}</span>
+                        <span class="fw-bold">{{ '%.1f'|format(valor) if valor is not none else '-' }}</span>
+                    </div>
+                    <div class="progress">
+                        {% set pct = valor if valor is not none else 0 %}
+                        {% set color = 'bg-success' if pct >= 70 else ('bg-warning' if pct >= 50 else 'bg-danger') %}
+                        <div class="progress-bar {{ color }}" style="width: {{ pct }}%">{{ '%.0f'|format(pct) }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Flags activos -->
+        {% if flags|length > 0 %}
+        <div class="card mb-4 flag-card">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Flags activos
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    {% for f in flags %}
+                    <li>
+                        {% if 'straight' in f %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> <strong>Straight-lining:</strong> Varianza muy baja en respuestas Likert
+                        {% elif 'inconsistencia' in f %}
+                            <i class="bi bi-shuffle text-danger me-1"></i> <strong>Inconsistencia:</strong> Respuestas contradictorias en bloque D
+                        {% elif 'integridad' in f %}
+                            <i class="bi bi-shield-exclamation text-danger me-1"></i> <strong>Integridad baja:</strong> Respuestas situacionales de riesgo
+                        {% elif 'atencion' in f %}
+                            <i class="bi bi-eye-slash text-danger me-1"></i> <strong>{{ f }}</strong>
+                        {% else %}
+                            <i class="bi bi-flag text-secondary me-1"></i> {{ f }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tabla de respuestas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i>Respuestas individuales (23 preguntas)
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:50px">#</th>
+                            <th>Pregunta</th>
+                            <th style="width:100px" class="text-center">Respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in preguntas %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ item.num }}</span></td>
+                            <td><small>{{ item.texto }}</small></td>
+                            <td class="text-center fw-bold">{{ item.valor if item.valor is not none else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Metadata
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><strong>IP:</strong> {{ r.ip or '-' }}</div>
+                    <div class="col-md-8"><strong>User Agent:</strong> <small>{{ r.user_agent or '-' }}</small></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4"><strong>Token:</strong> <code>{{ r.token }}</code></div>
+                    <div class="col-md-4"><strong>Fallos atención:</strong> {{ r.fallos_atencion or 0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

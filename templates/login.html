@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Loansi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/theme.css" rel="stylesheet">
+    <link href="/static/css/components.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-gradient);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .theme-toggle-login {
+            position: fixed !important;
+            top: 30px;
+            right: 30px;
+            z-index: 9999 !important;  /* Máxima prioridad */
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex !important;  /* Forzar display */
+            align-items: center;
+            justify-content: center;
+            visibility: visible !important;  /* Forzar visibilidad */
+            opacity: 1 !important;
+        }
+
+        /* Garantizar visibilidad en ambos temas */
+        [data-theme="light"] .theme-toggle-login,
+        [data-theme="dark"] .theme-toggle-login {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .theme-toggle-login:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .theme-toggle-login {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                z-index: 9999 !important;
+            }
+        }
+
+        .theme-toggle-login:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .login-container {
+            max-width: 440px;
+            width: 100%;
+            padding: 20px;
+            z-index: 1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 120px rgba(102, 126, 234, 0.3);
+            padding: 50px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-theme="dark"] .login-card {
+            background: rgba(22, 22, 46, 0.95);
+            border: 1px solid rgba(124, 140, 252, 0.3);
+        }
+
+        /* Decorative gradient orb */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .login-logo i {
+            font-size: 3.5rem;
+            background: var(--bg-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.75rem;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            margin-bottom: 35px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .form-floating {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .form-floating .form-control {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            height: 60px;
+            padding: 20px 20px 8px 48px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-floating label {
+            padding: 20px 20px 20px 48px;
+            color: var(--text-muted);
+        }
+
+        .form-floating .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-floating .form-control:focus ~ label,
+        .form-floating .form-control:not(:placeholder-shown) ~ label {
+            transform: scale(0.85) translateY(-0.75rem);
+            padding-left: 48px;
+            color: var(--primary);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+
+        .form-floating:focus-within .input-icon {
+            color: var(--primary);
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 56px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+            background: var(--bg-gradient);
+            border: none;
+            color: white;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 30px 0 20px;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider span {
+            background: var(--bg-card);
+            padding: 0 15px;
+            position: relative;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .error-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 40px 30px;
+            }
+
+            .theme-toggle-login {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Botón de tema -->
+    <button class="theme-toggle-login" aria-label="Cambiar tema">
+        <i class="bi bi-moon-fill"></i>
+    </button>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+
+            <h3 class="login-title">Bienvenido</h3>
+            <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+
+            {% if error %}
+            <div class="alert alert-danger error-shake" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+            </div>
+            {% endif %}
+
+            <form id="loginForm" method="POST" action="/login">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="form-group position-relative mb-3">
+                    <i class="bi bi-person input-icon"></i>
+                    <input type="text" class="form-control ps-5" id="username" name="username"
+                           placeholder="Usuario" required autofocus>
+                </div>
+
+                <div class="form-group position-relative mb-3">
+                    <i class="bi bi-key input-icon"></i>
+                    <input type="password" class="form-control ps-5" id="password" name="password"
+                           placeholder="Contraseña" required>
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    Iniciar Sesión
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+
+            <script>
+            // Prevenir doble submit
+            let isSubmitting = false;
+
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                isSubmitting = true;
+                return true;
+            });
+
+            document.getElementById('loginForm').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !isSubmitting) {
+                    e.preventDefault();
+                    this.submit();
+                }
+            });
+            </script>
+
+            <div class="divider">
+                <span>LOANSI</span>
+            </div>
+
+            <div class="footer-text">
+                Sistema de Gestión de Créditos<br>
+                <small>© 2025 Todos los derechos reservados</small>
+            </div>
+        </div>
+    </div>
+
+<script src="/static/js/theme-unified.js"></script>
+<script>
+// Garantizar que el botón nunca desaparezca
+document.addEventListener('DOMContentLoaded', function() {
+    const themeBtn = document.querySelector('.theme-toggle-login');
+    if (themeBtn) {
+        // Observer para detectar cambios de estilo
+        const observer = new MutationObserver(function() {
+            themeBtn.style.display = 'flex';
+            themeBtn.style.visibility = 'visible';
+            themeBtn.style.opacity = '1';
+        });
+
+        observer.observe(themeBtn, {
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+    }
+});
+</script>
+</body>
+</html>

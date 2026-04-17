@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Error Simulador De Crédito Loansi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #ffdddd;
+            max-width: 500px;
+            margin: auto;
+        }
+        .error {
+            padding: 15px;
+            border-radius: 5px;
+            color: #c00;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        a {
+            text-decoration: none;
+            color: #007bff;
+            margin-top: 15px;
+            display: inline-block;
+            padding: 8px 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="error">
+    <p><strong>Error:</strong> {{ mensaje }}</p>
+    <a href="/">↩️ Intentar Nuevamente</a>
+</div>
+    <script src="/static/js/theme-unified.js"></script>
+</body>
+</html>
