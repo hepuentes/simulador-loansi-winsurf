@@ -218,8 +218,12 @@
     }
 
     // Polling automático: recargar página cada 30 segundos
+    // Solo si el modal de generar link NO está abierto
     setInterval(function() {
-        location.reload();
+        var modal = document.getElementById('modalNuevoLink');
+        if (!modal || !modal.classList.contains('show')) {
+            location.reload();
+        }
     }, 30000);
     </script>
 </body>
