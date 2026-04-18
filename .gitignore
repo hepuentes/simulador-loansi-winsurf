@@ -27,6 +27,7 @@ build/
 # Flask
 instance/
 *.db
+!loansi.db
 .env
 
 # IDE
