@@ -71,6 +71,17 @@ def conectar_db():
     return sqlite3.connect(DB_PATH)
 
 
+def _determinar_fuente_verificacion(fuentes_procesadas: list) -> str:
+    """Determina la fuente de verificación según prioridad PILA > Nómina > Certificación."""
+    if 'planilla_pila' in fuentes_procesadas:
+        return 'PILA'
+    elif 'soporte_ingresos' in fuentes_procesadas or 'colilla_pago' in fuentes_procesadas:
+        return 'Nómina'
+    elif 'certificado_laboral' in fuentes_procesadas:
+        return 'Certificación'
+    return 'No verificable'
+
+
 class ExtractorService:
     """Servicio principal de extracción de datos desde documentos usando IA."""
 
@@ -759,6 +770,38 @@ Si no lo encuentras retorna cadena vacía."""
                     # Siempre marcar la fuente si hubo nomina
                     if "_fuente_verificacion" not in resultado_final:
                         resultado_final["_fuente_verificacion"] = "Nómina"
+
+                # ============================================
+                # v4.9 — Exponer _salario_basico y libranzas calculadas
+                # ============================================
+                _datos_nom_v49 = validacion.get("datos_nomina", {}) if validacion else {}
+                resultado_final["_salario_basico"] = float(
+                    _datos_nom_v49.get("salario_basico") or 0
+                )
+
+                # Libranzas desde fórmula numérica (NO desde texto de alertas IA)
+                _total_ded_v49   = float(_datos_nom_v49.get("total_deducciones") or 0)
+                _salud_emp_v49   = float(_datos_nom_v49.get("deduccion_salud") or 0)
+                _pension_emp_v49 = float(_datos_nom_v49.get("deduccion_pension") or 0)
+                _sal_bas_v49     = float(_datos_nom_v49.get("salario_basico") or 0)
+
+                if _sal_bas_v49 > 0 and _total_ded_v49 > 0:
+                    _libranza_val = max(0, _total_ded_v49 - _salud_emp_v49 - _pension_emp_v49)
+                    _libranza_pct = (_libranza_val / _sal_bas_v49) * 100
+                    resultado_final["_libranza_valor_cop"]  = _libranza_val
+                    resultado_final["_libranza_porcentaje"] = round(_libranza_pct, 2)
+                    logger.info(
+                        f"💸 Libranza calculada: ${_libranza_val:,.0f} "
+                        f"({_libranza_pct:.2f}% del salario básico)"
+                    )
+                else:
+                    resultado_final["_libranza_valor_cop"]  = 0
+                    resultado_final["_libranza_porcentaje"] = 0
+
+                # Actualizar fuente de verificación según prioridad PILA > Nómina > Certificación
+                resultado_final["_fuente_verificacion"] = _determinar_fuente_verificacion(
+                    list(fuentes_procesadas)
+                )
             except Exception as e_val:
                 logger.warning(f"Error en validación de nómina: {e_val}")
 

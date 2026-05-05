@@ -679,9 +679,9 @@ def guardar_factores_rechazo(linea_id):
         data = request.get_json()
         # El frontend manda {factores: [...]} o [...]
         factores = data.get("factores", data) if isinstance(data, dict) else data
-        
+
         from db_helpers_scoring_linea import guardar_factores_rechazo_linea
-        
+
         if guardar_factores_rechazo_linea(linea_id, factores):
             return jsonify({"success": True})
         else:

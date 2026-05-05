@@ -861,11 +861,12 @@ function buscarCriterioEnLinea(criterioId) {
     const porNombre = configScoringLinea.criterios.find(c => c.nombre === criterioId);
     if (porNombre) return porNombre;
     // Intentar por slug derivado del nombre (ej: "validacion_identidad_estado" vs "Validacion Identidad, Estado.")
-    const slugBuscar = criterioId.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '');
-    const porSlug = configScoringLinea.criterios.find(c => {
-      const slugNombre = (c.nombre || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '');
-      return slugNombre === slugBuscar;
-    });
+    // Normalizar acentos antes del slug para que "psicométrico" y "psicometrico" hagan match
+    const slugify = s => (s || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const slugBuscar = slugify(criterioId);
+    const porSlug = configScoringLinea.criterios.find(c => slugify(c.nombre) === slugBuscar);
     if (porSlug) return porSlug;
   }
   return null;
@@ -887,11 +888,15 @@ function generarOpcionesCriteriosFactores(criterioSeleccionado) {
         return nombreA.localeCompare(nombreB, 'es');
       });
       html += `<optgroup label="── CRITERIOS SCORING [${nombreLinea}] ──">`;
-      // Pre-calcular slug del criterio seleccionado para matching por nombre
-      const slugSeleccionado = criterioSeleccionado ? criterioSeleccionado.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '') : '';
+      // Pre-calcular slug del criterio seleccionado para matching por nombre.
+      // Normalizar acentos (NFD + strip diacríticos) para que "psicométrico" matchee con "psicometrico".
+      const slugify = s => (s || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      const slugSeleccionado = criterioSeleccionado ? slugify(criterioSeleccionado) : '';
       criteriosOrdenados.forEach(([id, c]) => {
         const codigoCriterio = c.codigo || '';
-        const slugNombre = (c.nombre || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, '');
+        const slugNombre = slugify(c.nombre);
         // Matching: comparar por codigo (principal), luego por índice, nombre, o slug
         const isSelected = (codigoCriterio && criterioSeleccionado === codigoCriterio) ||
                            criterioSeleccionado === id ||
@@ -1175,6 +1180,11 @@ function renderFactoresRechazoLinea(factores) {
           // Sincronizar criterio_nombre con el nombre real
           factor.criterio_nombre = nombreMostrar;
           esCompuestoVinculado = criterioRef.tipo_campo === 'composite' || criterioRef.tipo_campo === 'select';
+          // Sincronizar criterio al codigo canónico para que al re-guardar
+          // se persista el codigo real del criterio (no un slug legacy).
+          if (criterioRef.codigo && factor.criterio !== criterioRef.codigo) {
+            factor.criterio = criterioRef.codigo;
+          }
         }
       }
       
@@ -1479,10 +1489,19 @@ function onCambiarCriterioLinea(select, index) {
     const codigoCriterio = option.dataset.codigo || '';
     
     // Guardar codigo slug si existe, sino el valor numérico (índice)
-    configScoringLinea.factores_rechazo[index].criterio = codigoCriterio || valor;
+    const criterioGuardado = codigoCriterio || valor;
+    configScoringLinea.factores_rechazo[index].criterio = criterioGuardado;
     configScoringLinea.factores_rechazo[index].criterio_nombre = nombreCriterio;
     configScoringLinea.factores_rechazo[index].tipo_criterio = 'scoring';
     configScoringLinea.factores_rechazo[index].criterio_personalizado = '';
+
+    // Sincronizar al codigo canónico si el criterio matchea con el catálogo de scoring
+    // (misma lógica que Fix B en renderAprobacionLinea)
+    const criterioRef = buscarCriterioEnLinea(criterioGuardado);
+    if (criterioRef && criterioRef.codigo) {
+      configScoringLinea.factores_rechazo[index].criterio = criterioRef.codigo;
+      configScoringLinea.factores_rechazo[index].criterio_nombre = criterioRef.nombre;
+    }
     
     // Si es factor tipo selección, cargar rangos del criterio scoring como opciones
     const factor = configScoringLinea.factores_rechazo[index];
@@ -1976,19 +1995,23 @@ async function guardarAprobacionLinea() {
         mostrarAlertaScoring(`Factor #${i + 1}: El factor de selección necesita al menos una opción`, "warning");
         return;
       }
-      // Autogenerar código interno único basado en el nombre
-      const codigoBase = f.criterio_nombre.trim().toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-      let codigoFinal = codigoBase;
-      let sufijo = 2;
-      // Verificar que no esté repetido entre todos los factores
-      const otrosCodigos = factores.filter((_, idx) => idx !== i).map(ff => ff.criterio);
-      while (otrosCodigos.includes(codigoFinal)) {
-        codigoFinal = codigoBase + '_' + sufijo;
-        sufijo++;
+      // Autogenerar código solo para factores personalizados.
+      // Los factores vinculados a criterios del catálogo de scoring
+      // ya tienen su código canónico asignado por onCambiarCriterioLinea (Fix D).
+      if (f.tipo_criterio !== 'scoring') {
+        const codigoBase = f.criterio_nombre.trim().toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        let codigoFinal = codigoBase;
+        let sufijo = 2;
+        // Verificar que no esté repetido entre todos los factores
+        const otrosCodigos = factores.filter((_, idx) => idx !== i).map(ff => ff.criterio);
+        while (otrosCodigos.includes(codigoFinal)) {
+          codigoFinal = codigoBase + '_' + sufijo;
+          sufijo++;
+        }
+        f.criterio = codigoFinal;
       }
-      f.criterio = codigoFinal;
     } else {
       // Validar factor tipo numérico
       const esPersonalizado = criterio === '__personalizado__' || f.tipo_criterio === 'personalizado';

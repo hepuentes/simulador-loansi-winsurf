@@ -48,6 +48,23 @@
                     <div class="col-md-3"><strong>Duración:</strong><br><small>{{ duracion }}</small></div>
                     <div class="col-md-3"><strong>Latencia prom.:</strong><br><small>{{ latencia_promedio }}</small></div>
                 </div>
+                <hr class="my-3">
+                <div class="d-flex justify-content-end">
+                    {% if r.estado_validacion == 'invalido' %}
+                        <button class="btn btn-secondary disabled" 
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="top"
+                                title="Test inválido — generar nuevo link y solicitar repetición del test antes de continuar">
+                            <i class="bi bi-x-circle me-1"></i>Test inválido — no se puede continuar
+                        </button>
+                    {% else %}
+                        <a href="/scoring?cedula={{ r.cedula }}" 
+                           target="_blank"
+                           class="btn btn-primary">
+                            <i class="bi bi-arrow-right-circle me-1"></i>Continuar con Scoring
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
 

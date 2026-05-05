@@ -72,12 +72,19 @@ class Config:
     # Los porcentajes rara vez cambian.
     PARAMETROS_LABORALES = {
         "anio": 2026,
-        "smlv": 1_423_500,
-        "subsidio_transporte": 200_000,
-        "pct_salud_empleado": 0.04,
-        "pct_pension_empleado": 0.04,
-        "pct_fsp_4_smlv": 0.01,
+        "smlv": 1_750_905,              # Decreto 1469 del 29-dic-2025
+        "subsidio_transporte": 249_095, # Decreto 1470 del 29-dic-2025
+        "pct_salud_empleado": 0.04,     # 4% Ley 100/1993
+        "pct_pension_empleado": 0.04,   # 4% Ley 100/1993
+        "pct_fsp_4_smlv": 0.01,         # Fondo Solidaridad Pensional >4 SMLV
         "pct_retencion_umbral": 5_470_000,
+        # Valores calculados de referencia
+        "smlv_065": 1_138_088,   # 0.65 SMLV — umbral mínimo extracto/ingreso_decision
+        "smlv_080": 1_400_724,   # 0.80 SMLV — zona advertencia MiDecisor subestimación
+        "smlv_150": 2_626_358,   # 1.5 SMLV
+        "smlv_200": 3_501_810,   # 2 SMLV — ingreso mínimo LoansiMoto Avanzada
+        "salud_emp_valor": 70_036,    # 4% × 1.750.905
+        "pension_emp_valor": 70_036,  # 4% × 1.750.905
     }
 
 

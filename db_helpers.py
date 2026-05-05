@@ -1180,6 +1180,9 @@ def guardar_evaluacion(evaluacion):
 
     Args:
         evaluacion (dict): Evaluación a guardar
+
+    Returns:
+        int — ID (lastrowid) de la evaluación recién insertada.
     """
     conn = conectar_db()
     cursor = conn.cursor()
@@ -1269,6 +1272,7 @@ def guardar_evaluacion(evaluacion):
         )
 
         conn.commit()
+        return cursor.lastrowid
 
     except Exception as e:
         conn.rollback()

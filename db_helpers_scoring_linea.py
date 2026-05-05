@@ -905,7 +905,7 @@ def guardar_factores_rechazo_linea(linea_id, factores):
             tipo_factor = factor.get("tipo_factor", "numerico")
             opciones = factor.get("opciones", [])
             opciones_json = json.dumps(opciones, ensure_ascii=False) if opciones else None
-            
+
             cursor.execute("""
                 INSERT INTO factores_rechazo_linea
                 (linea_credito_id, criterio_codigo, criterio_nombre, operador,

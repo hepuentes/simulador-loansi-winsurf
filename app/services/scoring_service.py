@@ -124,9 +124,15 @@ class ScoringService:
                 valor_num = 0
             
             # Buscar rango que aplica
-            for rango in rangos:
-                min_val = rango.get("min", float("-inf"))
-                max_val = rango.get("max", float("inf"))
+            for i, rango in enumerate(rangos):
+                min_v_raw = rango.get("min", float("-inf"))
+                max_v_raw = rango.get("max", float("inf"))
+                try:
+                    min_val = float(min_v_raw)
+                    max_val = float(max_v_raw)
+                except (TypeError, ValueError):
+                    print(f"⚠️ [SCORING] Rango[{i}] del criterio '{codigo}' tiene tipos inválidos: min={min_v_raw!r}, max={max_v_raw!r}. Saltando rango.", flush=True)
+                    continue
                 
                 if min_val <= valor_num <= max_val:
                     # Los rangos usan "puntos" o "puntaje"

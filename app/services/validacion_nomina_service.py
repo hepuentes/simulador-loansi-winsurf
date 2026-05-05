@@ -31,11 +31,11 @@ def _obtener_parametros_laborales():
         return Config.PARAMETROS_LABORALES
     except Exception as e2:
         logger.warning(f"No se pudieron cargar parametros laborales desde config: {e2}")
-        # Fallback con valores por defecto 2026
+        # Fallback con valores por defecto 2026 (Decreto 1469/1470 del 29-dic-2025)
         return {
             "anio": 2026,
-            "smlv": 1_423_500,
-            "subsidio_transporte": 200_000,
+            "smlv": 1_750_905,
+            "subsidio_transporte": 249_095,
             "pct_salud_empleado": 0.04,
             "pct_pension_empleado": 0.04,
             "pct_fsp_4_smlv": 0.01,
@@ -264,5 +264,44 @@ def validar_coherencia_nomina(datos_extraidos, params=None):
         f"Validacion nomina: {validaciones_ok}/{validaciones_total} OK, "
         f"coherencia={coherencia}, alertas={len(alertas)}"
     )
+
+    return resultado
+
+
+# ============================================================================
+# WRAPPER: validar_nomina (alias para compatibilidad con prompt v4.9)
+# ============================================================================
+
+def validar_nomina(datos_extraidos: dict, anio: int = 2026) -> dict:
+    """
+    Wrapper sobre validar_coherencia_nomina que normaliza el resultado al
+    formato esperado por el prompt v4.9 (total fijo=4, params_usados con transp).
+
+    Mantiene compatibilidad con extractor_service.py que llama a
+    validar_coherencia_nomina directamente.
+    """
+    params = _obtener_parametros_laborales()
+    resultado = validar_coherencia_nomina(datos_extraidos, params=params)
+
+    # Normalizar total a 4 (prompt v4.9 espera 4 validaciones fijas)
+    pasadas = resultado.get("validaciones_pasadas", 0)
+    total_original = resultado.get("validaciones_total", 0)
+
+    # Si el total real es menor a 4, mantener las pasadas pero ajustar total
+    # para que la UI muestre "x/4" de forma consistente
+    total_normalizado = 4
+    pasadas_normalizadas = min(pasadas, total_normalizado)
+    fallidas_normalizadas = total_normalizado - pasadas_normalizadas
+
+    # Enriquecer params_usados con subsidio_transporte para el prompt
+    params_usados = resultado.get("parametros_usados", {})
+    params_usados.setdefault("subsidio_transporte", params.get("subsidio_transporte"))
+
+    resultado["validaciones_pasadas"] = pasadas_normalizadas
+    resultado["validaciones_fallidas"] = fallidas_normalizadas
+    resultado["validaciones_total"] = total_normalizado
+    resultado["validaciones_total_real"] = total_original  # Para debug
+    resultado["parametros_usados"] = params_usados
+    resultado["datos_nomina"] = resultado.get("datos_nomina", {})
 
     return resultado

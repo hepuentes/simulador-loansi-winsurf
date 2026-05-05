@@ -1132,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                            title="Solo números"
                                            maxlength="15"
                                            required
-                                           value="{{ form_values.get('nombre_cliente_cedula', '') if form_values else '' }}">
+                                           value="{{ form_values.get('nombre_cliente_cedula', '') if form_values else (cedula_inicial or '') }}">
                                 </div>
 
                                 <!-- Fecha de nacimiento -->
@@ -1270,23 +1270,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                 </div>
 
-                                <!-- Score psicométrico (WhatsApp/ManyChat) -->
-                                <div class="mb-3">
-                                    <label for="score_psicometrico" class="form-label">
-                                        <i class="bi bi-chat-dots me-1"></i> Score Psicometrico (WhatsApp)
-                                    </label>
-                                    <input type="number"
-                                           class="form-control"
-                                           id="score_psicometrico"
-                                           name="score_psicometrico"
-                                           placeholder="Ingresar puntaje del cuestionario (-10 a 22)"
-                                           min="-10"
-                                           max="22"
-                                           value="{{ form_values.get('score_psicometrico', '0') if form_values else '0' }}">
-                                    <div class="form-text">
-                                        <i class="bi bi-info-circle"></i> Puntaje del cuestionario de ManyChat. Dejar en 0 si no se realizo.
-                                    </div>
-                                </div>
+                                <!-- Score Psicometrico (WhatsApp) eliminado — reemplazado por criterios dinámicos inyectados por backend -->
 
                                 <!-- Panel de evaluación psicométrica -->
                                 <div class="card border-info mb-3" id="panelPsicometrico" style="display:none;">
@@ -1359,8 +1343,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <div class="criterios-seccion-body-form">
                                             {% for criterio in grupo.criterios %}
                                                 {% set criterio_id = criterio.id %}
+                                                {% set es_inyectado_backend = criterio_id in ['criterio_1777391941817', 'criterio_1777404973789'] %}
 
-                                                <div class="mb-4">
+                                                <div class="mb-4" {% if es_inyectado_backend %}style="display:none;"{% endif %}>
                                                     <label for="{{ criterio_id }}" class="form-label">
                                                         {% if criterio.nombre %}
                                                             {{ criterio.nombre }}
@@ -1379,12 +1364,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         <input type="text"
                                                                class="form-control currency-input"
                                                                id="{{ criterio_id }}"
-                                                               name="{{ criterio_id }}"
+                                                               {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                                placeholder="{{ placeholder }}"
                                                                oninput="formatCurrencyInput(this)"
                                                                data-tipo="currency"
                                                                value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                                               required>
+                                                               {% if not es_inyectado_backend %}required{% endif %}>
                                                     </div>
 
                                                     {% elif tipo_campo == 'percentage' %}
@@ -1392,23 +1377,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         <input type="number"
                                                                class="form-control"
                                                                id="{{ criterio_id }}"
-                                                               name="{{ criterio_id }}"
+                                                               {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                                placeholder="{{ placeholder }}"
                                                                min="0"
                                                                max="300"
                                                                step="any"
                                                                data-tipo="percentage"
                                                                value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                                               required>
+                                                               {% if not es_inyectado_backend %}required{% endif %}>
                                                         <span class="input-group-text">%</span>
                                                     </div>
 
                                                     {% elif tipo_campo == 'select' %}
                                                     <select class="form-select"
                                                             id="{{ criterio_id }}"
-                                                            name="{{ criterio_id }}"
+                                                            {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                             data-tipo="select"
-                                                            required>
+                                                            {% if not es_inyectado_backend %}required{% endif %}>
                                                         <option value="">-- Seleccione --</option>
                                                         {% if criterio.opciones %}
                                                             {% for opcion in criterio.opciones %}
@@ -1426,24 +1411,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                                     <input type="text"
                                                            class="form-control"
                                                            id="{{ criterio_id }}"
-                                                           name="{{ criterio_id }}"
+                                                           {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                            placeholder="{{ placeholder }}"
                                                            data-tipo="text"
                                                            value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                                           required>
+                                                           {% if not es_inyectado_backend %}required{% endif %}>
 
                                                     {% else %}
                                                     <input type="number"
                                                            class="form-control"
                                                            id="{{ criterio_id }}"
-                                                           name="{{ criterio_id }}"
+                                                           {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                            placeholder="{{ placeholder }}"
                                                            min="0"
                                                            max="999999999"
                                                            step="any"
                                                            data-tipo="number"
                                                            value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                                           required>
+                                                           {% if not es_inyectado_backend %}required{% endif %}>
                                                     {% endif %}
 
                                                     <div class="field-help">
@@ -1483,7 +1468,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% else %}
                                 {# Fallback: mostrar sin secciones si no hay secciones configuradas #}
                                 {% for criterio_id, criterio in scoring_criterios.items() %}
-                                <div class="mb-4">
+                                {% set es_inyectado_backend = criterio_id in ['criterio_1777391941817', 'criterio_1777404973789'] %}
+                                <div class="mb-4" {% if es_inyectado_backend %}style="display:none;"{% endif %}>
                                     <label for="{{ criterio_id }}" class="form-label">
                                         {% if criterio.nombre %}
                                             {{ criterio.nombre }}
@@ -1502,12 +1488,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <input type="text"
                                                class="form-control currency-input"
                                                id="{{ criterio_id }}"
-                                               name="{{ criterio_id }}"
+                                               {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                placeholder="{{ placeholder }}"
                                                oninput="formatCurrencyInput(this)"
                                                data-tipo="currency"
                                                value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                               required>
+                                               {% if not es_inyectado_backend %}required{% endif %}>
                                     </div>
 
                                     {% elif tipo_campo == 'percentage' %}
@@ -1515,23 +1501,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <input type="number"
                                                class="form-control"
                                                id="{{ criterio_id }}"
-                                               name="{{ criterio_id }}"
+                                               {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                                placeholder="{{ placeholder }}"
                                                min="0"
                                                max="300"
                                                step="any"
                                                data-tipo="percentage"
                                                value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                               required>
+                                               {% if not es_inyectado_backend %}required{% endif %}>
                                         <span class="input-group-text">%</span>
                                     </div>
 
                                     {% elif tipo_campo == 'select' %}
                                     <select class="form-select"
                                             id="{{ criterio_id }}"
-                                            name="{{ criterio_id }}"
+                                            {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                             data-tipo="select"
-                                            required>
+                                            {% if not es_inyectado_backend %}required{% endif %}>
                                         {% if criterio.opciones %}
                                             {% for opcion in criterio.opciones %}
                                             <option value="{{ opcion.valor }}"
@@ -1550,24 +1536,24 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <input type="text"
                                            class="form-control"
                                            id="{{ criterio_id }}"
-                                           name="{{ criterio_id }}"
+                                           {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                            placeholder="{{ placeholder }}"
                                            data-tipo="text"
                                            value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                           required>
+                                           {% if not es_inyectado_backend %}required{% endif %}>
 
                                     {% else %}
                                     <input type="number"
                                            class="form-control"
                                            id="{{ criterio_id }}"
-                                           name="{{ criterio_id }}"
+                                           {% if not es_inyectado_backend %}name="{{ criterio_id }}"{% else %}name=""{% endif %}
                                            placeholder="{{ placeholder }}"
                                            min="0"
                                            max="999999999"
                                            step="any"
                                            data-tipo="number"
                                            value="{{ form_values[criterio_id] if form_values and criterio_id in form_values else '' }}"
-                                           required>
+                                           {% if not es_inyectado_backend %}required{% endif %}>
                                     {% endif %}
 
                                     <div class="field-help">
@@ -2307,8 +2293,12 @@ function renderizarCriteriosFormulario(criteriosAgrupados) {
         grupo.criterios.forEach(criterio => {
             const tipo = criterio.tipo_campo || 'number';
             const ayuda = criterio.ayuda || criterio.descripcion || '';
+            const esInyectadoBackend = ['criterio_1777391941817', 'criterio_1777404973789'].includes(criterio.id);
+            const nameAttr = esInyectadoBackend ? '' : `name="${criterio.id}"`;
+            const reqAttr = esInyectadoBackend ? '' : 'required';
+            const divStyle = esInyectadoBackend ? 'style="display:none;"' : '';
             
-            html += `<div class="mb-4">`;
+            html += `<div class="mb-4" ${divStyle}>`;
             html += `<label for="${criterio.id}" class="form-label">${criterio.nombre || criterio.id}</label>`;
             
             if (tipo === 'currency') {
@@ -2318,12 +2308,12 @@ function renderizarCriteriosFormulario(criteriosAgrupados) {
                     <input type="text"
                            class="form-control currency-input"
                            id="${criterio.id}"
-                           name="${criterio.id}"
+                           ${nameAttr}
                            placeholder="Ingrese valor"
                            oninput="formatCurrencyInput(this)"
                            data-tipo="currency"
                            value=""
-                           required>
+                           ${reqAttr}>
                 </div>`;
             } else if (tipo === 'percentage') {
                 html += `
@@ -2331,22 +2321,22 @@ function renderizarCriteriosFormulario(criteriosAgrupados) {
                     <input type="number"
                            class="form-control"
                            id="${criterio.id}"
-                           name="${criterio.id}"
+                           ${nameAttr}
                            placeholder="Ingrese valor"
                            min="0"
                            max="300"
                            step="any"
                            data-tipo="percentage"
                            value=""
-                           required>
+                           ${reqAttr}>
                     <span class="input-group-text">%</span>
                 </div>`;
             } else if (tipo === 'select' && criterio.opciones && criterio.opciones.length > 0) {
                 html += `<select class="form-select"
                                 id="${criterio.id}"
-                                name="${criterio.id}"
+                                ${nameAttr}
                                 data-tipo="select"
-                                required>`;
+                                ${reqAttr}>`;
                 html += `<option value="">-- Seleccione --</option>`;
                 criterio.opciones.forEach(opcion => {
                     html += `<option value="${opcion.valor}">${opcion.texto}</option>`;
@@ -2355,9 +2345,9 @@ function renderizarCriteriosFormulario(criteriosAgrupados) {
             } else if (tipo === 'select' && criterio.rangos && criterio.rangos.length > 0) {
                 html += `<select class="form-select"
                                 id="${criterio.id}"
-                                name="${criterio.id}"
+                                ${nameAttr}
                                 data-tipo="select"
-                                required>`;
+                                ${reqAttr}>`;
                 html += `<option value="">-- Seleccione --</option>`;
                 criterio.rangos.forEach(rango => {
                     html += `<option value="${rango.puntos}">${rango.etiqueta || rango.descripcion || rango.min + '-' + rango.max}</option>`;
@@ -2399,14 +2389,14 @@ function renderizarCriteriosFormulario(criteriosAgrupados) {
                 <input type="number"
                        class="form-control"
                        id="${criterio.id}"
-                       name="${criterio.id}"
+                       ${nameAttr}
                        placeholder="Ingrese valor"
                        min="${min}"
                        max="${max}"
                        step="${step}"
                        data-tipo="number"
                        value=""
-                       required>`;
+                       ${reqAttr}>`;
             }
             
             if (ayuda) {
@@ -2481,7 +2471,8 @@ function renderizarZonaDocumentos(data) {
     'extracto_bancario': 'obligatorio',
     'recibo_servicios': 'recomendado',
     'certificado_seguridad_social': 'recomendado',
-    'planilla_pila': 'opcional'
+    'planilla_pila': 'opcional',
+    'certificado_laboral': 'opcional'
   };
   // Iconos personalizados por fuente
   const iconosFuente = {
@@ -2491,10 +2482,11 @@ function renderizarZonaDocumentos(data) {
     'extracto_bancario': '<i class="bi bi-bank me-1 text-primary"></i>',
     'recibo_servicios': '<i class="bi bi-lightning me-1 text-warning"></i>',
     'certificado_seguridad_social': '<i class="bi bi-heart-pulse me-1 text-success"></i>',
-    'planilla_pila': '<i class="bi bi-file-earmark-spreadsheet me-1 text-info"></i>'
+    'planilla_pila': '<i class="bi bi-file-earmark-spreadsheet me-1 text-info"></i>',
+    'certificado_laboral': '<i class="bi bi-file-earmark-text me-1 text-secondary"></i>'
   };
-  // Asegurar que las 3 fuentes nuevas esten al final si no vienen en data.documentos
-  const fuentesAdicionales = ['recibo_servicios', 'certificado_seguridad_social', 'planilla_pila'];
+  // Asegurar que las 4 fuentes nuevas esten al final si no vienen en data.documentos
+  const fuentesAdicionales = ['recibo_servicios', 'certificado_seguridad_social', 'planilla_pila', 'certificado_laboral'];
   const docsList = [...(data.documentos || [])];
   fuentesAdicionales.forEach(f => { if (!docsList.includes(f)) docsList.push(f); });
   let html = '<div class="row g-3">';
@@ -3122,6 +3114,8 @@ function preLlenarFormulario(datos) {
       console.log('Penalizacion ' + labelDebug + ': indice invalido ' + indiceOpcion);
       return;
     }
+    // PASO 0: Marcar como auto-llenado para que el loop generico no lo sobreescriba
+    select.setAttribute('data-autollenado', 'penalizacion');
     // PASO 1: Seleccionar la opcion usando selectedIndex (mas confiable que opt.selected)
     select.selectedIndex = indiceOpcion;
     const valorSeleccionado = select.value;
@@ -3239,6 +3233,11 @@ function preLlenarFormulario(datos) {
     console.log('  Buscando campo name=' + codigo + ' valor=' + valor);
     const campo = document.querySelector('[name="' + codigo + '"]');
     if (campo) {
+      // Saltar campos ya auto-llenados por penalizacion
+      if (campo.getAttribute('data-autollenado') === 'penalizacion') {
+        console.log('  ⏭️ Saltando campo auto-llenado por penalizacion: ' + codigo);
+        return;
+      }
       if (campo.tagName === 'SELECT') {
         // Normalizar dashes: em dash (—), en dash (–) y guion (-) se tratan igual
         const normDash = s => s.replace(/[\u2014\u2013\u2012\u2015]/g, '-');
@@ -3527,6 +3526,7 @@ function initCompactFileInputs() {
     { inputId: 'file_recibo_servicios',             containerId: 'fc_recibo_servicios',       fuente: 'recibo_servicios',             label: null },
     { inputId: 'file_certificado_seguridad_social', containerId: 'fc_certificado_seguridad_social', fuente: 'certificado_seguridad_social', label: 'Agregar otro documento' },
     { inputId: 'file_planilla_pila',                containerId: 'fc_planilla_pila',          fuente: 'planilla_pila',                label: null },
+    { inputId: 'file_certificado_laboral',          containerId: 'fc_certificado_laboral',    fuente: 'certificado_laboral',          label: null },
   ];
   configs.forEach(function(cfg) {
     var input = document.getElementById(cfg.inputId);

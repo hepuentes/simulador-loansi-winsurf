@@ -9,6 +9,86 @@ import json
 import traceback
 
 from . import scoring_bp
+from db_helpers_psicometrico import obtener_por_cedula
+
+
+# ============================================================================
+# HELPERS v4.9 — Cálculo de ingreso_decision, DTI triangulado y libranzas
+# ----------------------------------------------------------------------------
+# NOTA: La ruta principal /scoring POST usa calcular_ingreso_validado() de
+# scoring_service.py (triangulación 4 fuentes). Estas funciones son
+# alternativas más simples (MAX de 2 fuentes) disponibles para uso futuro
+# o desde otras rutas.
+# ============================================================================
+
+def calcular_ingreso_decision(datos_form: dict, datos_extraidos: dict) -> tuple:
+    """
+    ingreso_decision = MAX(salario_basico_nomina, estimado_midecisor)
+
+    CONTEXTO: MiDecisor subestima el ingreso real ~15-25% para empleados
+    de salario mínimo. La nómina física siempre es más confiable.
+
+    Returns: (ingreso_decision: float, fuente_verificacion: str)
+    """
+    ingreso_verificado_asesor = float(datos_form.get('ingreso_verificado') or 0)
+    ingreso_estimado_midecisor = float(datos_form.get('ingresos_netos') or 0)
+
+    if not ingreso_verificado_asesor and datos_extraidos:
+        ingreso_verificado_asesor = float(
+            datos_extraidos.get('_ingreso_verificado') or
+            datos_extraidos.get('_salario_basico') or 0
+        )
+
+    ingreso_decision = max(ingreso_estimado_midecisor, ingreso_verificado_asesor)
+
+    if ingreso_verificado_asesor >= ingreso_estimado_midecisor and ingreso_verificado_asesor > 0:
+        fuente = datos_form.get('fuente_verificacion') or 'Nómina'
+    elif ingreso_estimado_midecisor > 0:
+        fuente = 'MiDecisor'
+    else:
+        fuente = 'No verificado'
+
+    return ingreso_decision, fuente
+
+
+def calcular_dti_triangulado(datos_form: dict, ingreso_decision: float) -> float:
+    """
+    DTI triangulado = (cuotas_buro + libranzas_colilla + cuota_nueva) / ingreso_decision × 100
+    Límite legal: 50% del ingreso neto (Ley 1527/2012).
+    """
+    if ingreso_decision <= 0:
+        return 999.0
+
+    cuotas_buro = float(datos_form.get('cuota_mensual_buro') or 0)
+    if not cuotas_buro:
+        relacion_deuda_pct = float(datos_form.get('relacion_deuda') or 0)
+        cuotas_buro = (relacion_deuda_pct / 100) * ingreso_decision
+
+    libranzas_colilla = float(datos_form.get('_libranzas_valor_cop') or 0)
+    cuota_nueva = float(datos_form.get('cuota_nueva') or 0)
+
+    dti = ((cuotas_buro + libranzas_colilla + cuota_nueva) / ingreso_decision) * 100
+    return round(dti, 2)
+
+
+def calcular_libranzas(datos_nomina: dict) -> tuple:
+    """
+    Calcula libranzas desde datos_nomina (fórmula numérica, NO texto IA).
+
+    Fórmula: (Total_Deducciones - Salud - Pensión) / Salario_Básico × 100
+    Returns: (libranza_valor_cop: float, libranza_porcentaje: float)
+    """
+    salario_basico    = float(datos_nomina.get('salario_basico') or 0)
+    total_deducciones = float(datos_nomina.get('total_deducciones') or 0)
+    deduccion_salud   = float(datos_nomina.get('deduccion_salud') or 0)
+    deduccion_pension = float(datos_nomina.get('deduccion_pension') or 0)
+
+    if salario_basico <= 0 or total_deducciones <= 0:
+        return 0.0, 0.0
+
+    libranza_valor = max(0, total_deducciones - deduccion_salud - deduccion_pension)
+    libranza_porcentaje = (libranza_valor / salario_basico) * 100
+    return libranza_valor, round(libranza_porcentaje, 2)
 
 
 def login_required(f):
@@ -134,6 +214,8 @@ def _preparar_scoring_result(evaluacion, criterios_evaluados, nivel_riesgo):
 @requiere_permiso("sco_ejecutar")
 def scoring_page():
     """Página de evaluación de scoring - Carga configuración por línea de crédito"""
+    cedula_inicial = request.args.get("cedula", "").strip()
+
     import sys
     from pathlib import Path
     BASE_DIR = Path(__file__).parent.parent.parent.resolve()
@@ -200,7 +282,8 @@ def scoring_page():
             "lineas_scoring": lineas_scoring,
             "criterios": criterios,
             "niveles_riesgo": niveles_riesgo
-        })
+        }),
+        cedula_inicial=cedula_inicial
     )
 
 
@@ -227,12 +310,6 @@ def calcular_scoring():
     try:
         # Obtener datos del formulario
         form_data = request.form.to_dict()
-        
-        # DEBUG: Ver datos originales del formulario
-        print(f"\n🔍 DEBUG FORM_DATA RECIBIDO:")
-        for k, v in sorted(form_data.items()):
-            if 'criterio' in k.lower() or 'saldo' in k.lower():
-                print(f"   📥 {k}: '{v}' (tipo: {type(v).__name__})")
         
         # Los campos del formulario son nombre_cliente_nombre y nombre_cliente_cedula
         nombre_cliente = form_data.get("nombre_cliente", "") or form_data.get("nombre_cliente_nombre", "")
@@ -323,13 +400,11 @@ def calcular_scoring():
         
         # Mapear edad del solicitante (puede llegar como 'edad' o 'edad_solicitante')
         edad_valor = form_data.get('edad_solicitante') or form_data.get('edad')
-        print(f"DEBUG edad: form_data.edad_solicitante='{form_data.get('edad_solicitante')}', form_data.edad='{form_data.get('edad')}', edad_valor='{edad_valor}'")
         if edad_valor:
             try:
                 edad_num = float(str(edad_valor).replace(',', '.'))
                 valores_criterios['edad_solicitante'] = edad_num
                 valores_criterios['edad'] = edad_num
-                print(f"DEBUG edad mapeada: edad_num={edad_num}")
             except (ValueError, TypeError):
                 pass
         
@@ -453,6 +528,38 @@ def calcular_scoring():
             except (ValueError, TypeError) as e:
                 print(f"   ⚠️ Error calculando DTI triangulado: {e}")
         
+        # Constantes locales — mover a nivel módulo si crece la lista
+        CRITERIO_SCORE_PSICOMETRICO = "criterio_1777391941817"
+        CRITERIO_ESTADO_PSICOMETRICO = "criterio_1777404973789"
+        ESTADO_PSICO_VALIDO = 1
+        ESTADO_PSICO_SOSPECHOSO = 2
+        ESTADO_PSICO_INVALIDO = 3
+        ESTADO_PSICO_SIN_TEST = 4
+
+        # =====================================================================
+        # INYECCIÓN DE RESULTADO PSICOMÉTRICO INTERNO
+        # Política Loansi v4.9: test obligatorio. Sin test → rechazo automático.
+        # Estados: 1=valido, 2=sospechoso (con techo 60), 3=invalido, 4=sin_test
+        # =====================================================================
+        token_psico = None
+        test_psico = obtener_por_cedula(cedula) if cedula else None
+
+        if test_psico and test_psico.get("completado") == 1:
+            token_psico = test_psico.get("token")
+            estado = test_psico.get("estado_validacion")
+
+            if estado == "invalido":
+                valores_criterios[CRITERIO_ESTADO_PSICOMETRICO] = ESTADO_PSICO_INVALIDO
+            elif estado == "sospechoso":
+                score_efectivo = min(test_psico.get("score_total", 0), 60)
+                valores_criterios[CRITERIO_SCORE_PSICOMETRICO] = score_efectivo
+                valores_criterios[CRITERIO_ESTADO_PSICOMETRICO] = ESTADO_PSICO_SOSPECHOSO
+            else:  # valido
+                valores_criterios[CRITERIO_SCORE_PSICOMETRICO] = test_psico.get("score_total", 0)
+                valores_criterios[CRITERIO_ESTADO_PSICOMETRICO] = ESTADO_PSICO_VALIDO
+        else:
+            valores_criterios[CRITERIO_ESTADO_PSICOMETRICO] = ESTADO_PSICO_SIN_TEST
+
         # 1. VERIFICAR RECHAZO AUTOMÁTICO PRIMERO (usando el servicio)
         rechazo_info = scoring_service.verificar_rechazo_automatico(valores_criterios)
         
@@ -613,8 +720,27 @@ def calcular_scoring():
         }
         
         # Guardar evaluación
-        guardar_evaluacion(evaluacion)
-        
+        evaluacion_id = guardar_evaluacion(evaluacion)
+
+        # =====================================================================
+        # VÍNCULO BIDIRECCIONAL: psicometrico_respuestas.scoring_id
+        # Permite trazar qué scoring usó qué test psicométrico.
+        # =====================================================================
+        if token_psico and evaluacion_id:
+            try:
+                conn_psico = conectar_db()
+                cursor_psico = conn_psico.cursor()
+                cursor_psico.execute(
+                    "UPDATE psicometrico_respuestas SET scoring_id = ? WHERE token = ?",
+                    (evaluacion_id, token_psico)
+                )
+                conn_psico.commit()
+                conn_psico.close()
+            except Exception as e:
+                # No bloquear el scoring por fallo en vínculo bidireccional.
+                # El scoring ya se guardó correctamente; el vínculo es opcional.
+                print(f"⚠️ No se pudo vincular psicometrico_respuestas.scoring_id: {e}", flush=True)
+
         # =====================================================================
         # RE-RENDERIZAR FORMULARIO CON RESULTADOS
         # =====================================================================
@@ -628,14 +754,7 @@ def calcular_scoring():
         secciones = scoring_config_linea.get("secciones", [])
         niveles_riesgo = scoring_config_linea.get("niveles_riesgo", [])
         factores_rechazo = scoring_config_linea.get("factores_rechazo_automatico", [])
-        
-        print(f"\n🔍 DEBUG POST /scoring:")
-        print(f"   criterios_dict tipo: {type(criterios_dict)}, cantidad: {len(criterios_dict)}")
-        print(f"   evaluacion resultado: {evaluacion['resultado']}")
-        print(f"   criterios_evaluados ({len(criterios_evaluados)}):")
-        for ce in criterios_evaluados:
-            print(f"      {ce.get('codigo')}: pond={ce.get('puntos_ponderados')} max={ce.get('puntos_maximos')} min={ce.get('puntos_minimos')} puntaje={ce.get('puntaje')}")
-        
+
         # Convertir diccionario a lista para agrupar_criterios_por_seccion
         # La función espera lista de dicts con campo "codigo"
         criterios_lista = []
@@ -678,7 +797,8 @@ def calcular_scoring():
             # scoring_result incluye resultado + detalles para el template
             # Determinar colores según nivel de riesgo y estado de aprobación
             scoring_result=_preparar_scoring_result(evaluacion, criterios_evaluados, nivel_riesgo),
-            form_values=form_data  # Para mantener valores del formulario
+            form_values=form_data,  # Para mantener valores del formulario
+            cedula_inicial=""
         )
         
     except Exception as e:
